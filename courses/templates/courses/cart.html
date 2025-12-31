@@ -1,0 +1,861 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<!-- Cart Page -->
+<div class="cart-page">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <div class="cart-breadcrumb">
+            <a href="/" class="crumb">
+                <span>🏠</span>
+                <span>Trang chủ</span>
+            </a>
+            <div class="crumb-separator">›</div>
+            <div class="crumb current">
+                <span>🛒</span>
+                <span>Giỏ hàng</span>
+            </div>
+        </div>
+
+        <!-- Cart Header -->
+        <div class="cart-header">
+            <h1>🛒 Giỏ hàng của bạn</h1>
+            <p>Kiểm tra và thanh toán các khóa học đã chọn</p>
+        </div>
+
+        {% if cart_items %}
+        <!-- Cart Content -->
+        <div class="cart-content">
+            <!-- Cart Items -->
+            <div class="cart-items-section">
+                <div class="section-title">
+                    <h2>📚 Khóa học đã chọn ({{ cart_items|length }})</h2>
+                </div>
+                
+                <div class="cart-items">
+                    {% for item in cart_items %}
+                    <div class="cart-item">
+                        <div class="item-image">
+                            <div class="course-category">{{ item.course.get_category_display|default:"Lập trình" }}</div>
+                        </div>
+                        
+                        <div class="item-details">
+                            <h3 class="item-title">{{ item.course.title }}</h3>
+                            <p class="item-description">{{ item.course.description|truncatewords:20 }}</p>
+                            
+                            <div class="item-meta">
+                                <span class="meta-item">
+                                    <span class="meta-icon">⏱️</span>
+                                    {{ item.course.duration|default:"8 giờ" }} học
+                                </span>
+                                <span class="meta-item">
+                                    <span class="meta-icon">👨‍🎓</span>
+                                    {{ item.course.enrollment_count|default:"0" }} học viên
+                                </span>
+                                <span class="meta-item">
+                                    <span class="meta-icon">⭐</span>
+                                    {{ item.course.average_rating|default:"5.0" }}/5.0
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="item-actions">
+                            <div class="item-price">
+                                <span class="price-amount">{{ item.course.price|floatformat:0 }}</span>
+                                <span class="price-currency">VNĐ</span>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <a href="{% url 'course_detail' item.course.id %}" class="btn-detail">
+                                    <span>👁️</span>
+                                    <span>Xem chi tiết</span>
+                                </a>
+                                <a href="{% url 'remove_from_cart' item.course.id %}" class="btn-remove" 
+                                   onclick="return confirm('Bạn có chắc muốn xóa khóa học này khỏi giỏ hàng?')">
+                                    <span>🗑️</span>
+                                    <span>Xóa</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Continue Shopping -->
+                <div class="continue-shopping">
+                    <a href="/" class="btn-continue">
+                        <span>←</span>
+                        <span>Tiếp tục mua sắm</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <h3>💰 Tổng thanh toán</h3>
+                    </div>
+                    
+                    <div class="summary-content">
+                        <div class="summary-row">
+                            <span class="row-label">Tạm tính ({{ cart_items|length }} khóa học)</span>
+                            <span class="row-value">{{ subtotal|floatformat:0 }} VNĐ</span>
+                        </div>
+                        
+                        <div class="summary-row discount">
+                            <span class="row-label">Giảm giá</span>
+                            <span class="row-value">-0 VNĐ</span>
+                        </div>
+                        
+                        <div class="summary-row total">
+                            <span class="row-label">Tổng cộng</span>
+                            <span class="row-value">{{ subtotal|floatformat:0 }} VNĐ</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Checkout Button -->
+                    <div class="checkout-section">
+                        <a href="{% url 'checkout' %}" class="btn-checkout">
+                            <span>💳</span>
+                            <span>Tiến hành thanh toán</span>
+                        </a>
+                        
+                        <div class="secure-payment">
+                            <span class="secure-icon">🔒</span>
+                            <span class="secure-text">Thanh toán an toàn & bảo mật</span>
+                        </div>
+                        
+                        <div class="payment-methods">
+                            <span class="payment-icon">💳</span>
+                            <span class="payment-icon">🏦</span>
+                            <span class="payment-icon">📱</span>
+                            <span class="payment-icon">🛡️</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Promo Code -->
+                    <div class="promo-section">
+                        <div class="promo-header">
+                            <h4>🎁 Mã giảm giá</h4>
+                        </div>
+                        <div class="promo-input">
+                            <input type="text" placeholder="Nhập mã giảm giá..." id="promoCode">
+                            <button type="button" class="btn-apply">Áp dụng</button>
+                        </div>
+                        <div class="promo-suggestions">
+                            <span class="promo-tag">SALE10</span>
+                            <span class="promo-tag">WELCOME15</span>
+                            <span class="promo-tag">STUDENT20</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Benefits -->
+                <div class="benefits-card">
+                    <h4>🎯 Lợi ích khi mua khóa học</h4>
+                    <ul class="benefits-list">
+                        <li><span>✅</span> Truy cập trọn đời khóa học</li>
+                        <li><span>✅</span> Hỗ trợ 24/7 từ giảng viên</li>
+                        <li><span>✅</span> Chứng chỉ có xác thực</li>
+                        <li><span>✅</span> Cập nhật nội dung miễn phí</li>
+                        <li><span>✅</span> Tài liệu học tập đầy đủ</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty Cart -->
+        <div class="empty-cart">
+            <div class="empty-icon">🛒</div>
+            <h2>Giỏ hàng của bạn đang trống</h2>
+            <p>Hãy khám phá các khóa học và thêm vào giỏ hàng để bắt đầu học tập</p>
+            
+            <div class="empty-actions">
+                <a href="/" class="btn-primary">
+                    <span>🏠</span>
+                    <span>Về trang chủ</span>
+                </a>
+                <a href="/#courses" class="btn-secondary">
+                    <span>📚</span>
+                    <span>Xem khóa học</span>
+                </a>
+            </div>
+            
+            <!-- Popular Courses -->
+            <div class="popular-courses">
+                <h3>🔥 Khóa học phổ biến</h3>
+                <div class="courses-grid">
+                    <!-- Thêm 3-4 khóa học phổ biến ở đây -->
+                    <div class="course-card mini">
+                        <h4>Lập trình Web với React</h4>
+                        <p class="price">799,000 VNĐ</p>
+                        <a href="/course/1/" class="btn-small">Thêm vào giỏ</a>
+                    </div>
+                    <!-- Thêm các khóa học khác -->
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+:root {
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light: #f8fafc;
+    --border: #e2e8f0;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+/* Cart Page */
+.cart-page {
+    background: var(--light);
+    min-height: 100vh;
+    padding: 40px 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Breadcrumb */
+.cart-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+}
+
+.crumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.crumb:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.crumb.current {
+    color: var(--text);
+    font-weight: 600;
+    cursor: default;
+}
+
+.crumb-separator {
+    color: var(--muted);
+}
+
+/* Cart Header */
+.cart-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.cart-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.cart-header p {
+    color: var(--muted);
+    font-size: 1.1rem;
+}
+
+/* Cart Content */
+.cart-content {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 40px;
+}
+
+/* Cart Items */
+.cart-items-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+}
+
+.section-title {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.section-title h2 {
+    font-size: 1.5rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Cart Item */
+.cart-item {
+    display: grid;
+    grid-template-columns: 120px 1fr 200px;
+    gap: 20px;
+    padding: 25px;
+    border-radius: var(--radius);
+    background: var(--light);
+    margin-bottom: 20px;
+    transition: var(--transition);
+    border: 2px solid transparent;
+}
+
+.cart-item:hover {
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+}
+
+.item-image {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+}
+
+.course-category {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--accent);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.item-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.item-description {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.item-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.meta-icon {
+    font-size: 1.1rem;
+}
+
+/* Item Actions */
+.item-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.item-price {
+    text-align: right;
+}
+
+.price-amount {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.price-currency {
+    font-size: 1.2rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-detail, .btn-remove {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.btn-detail {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-detail:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.btn-remove {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-remove:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+/* Continue Shopping */
+.continue-shopping {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+}
+
+.btn-continue {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 12px 24px;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    transition: var(--transition);
+}
+
+.btn-continue:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Order Summary */
+.order-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+}
+
+.summary-header {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.summary-header h3 {
+    font-size: 1.5rem;
+    color: var(--text);
+}
+
+.summary-content {
+    margin-bottom: 30px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.row-label {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.row-value {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.summary-row.discount .row-value {
+    color: var(--success);
+}
+
+.summary-row.total {
+    border-bottom: none;
+    padding-top: 20px;
+    margin-top: 10px;
+    border-top: 2px solid var(--border);
+}
+
+.summary-row.total .row-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.summary-row.total .row-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+/* Checkout Section */
+.checkout-section {
+    margin: 30px 0;
+}
+
+.btn-checkout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--success), #34d399);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: var(--transition);
+    margin-bottom: 20px;
+}
+
+.btn-checkout:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3);
+}
+
+.secure-payment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.payment-methods {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.payment-icon {
+    font-size: 1.5rem;
+    opacity: 0.7;
+    transition: var(--transition);
+}
+
+.payment-icon:hover {
+    opacity: 1;
+}
+
+/* Promo Section */
+.promo-section {
+    background: linear-gradient(135deg, #fefce8, #fef9c3);
+    border-radius: 10px;
+    padding: 20px;
+    border: 2px solid #fbbf24;
+}
+
+.promo-header {
+    margin-bottom: 15px;
+}
+
+.promo-header h4 {
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.promo-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.promo-input input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: var(--transition);
+}
+
+.promo-input input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.btn-apply {
+    background: #fbbf24;
+    color: #92400e;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-apply:hover {
+    background: #f59e0b;
+    transform: translateY(-2px);
+}
+
+.promo-suggestions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.promo-tag {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.promo-tag:hover {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+/* Benefits Card */
+.benefits-card {
+    background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+    border-radius: var(--radius);
+    padding: 25px;
+    border: 2px solid #38bdf8;
+}
+
+.benefits-card h4 {
+    color: #0369a1;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+}
+
+.benefits-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: #0369a1;
+    font-weight: 500;
+}
+
+/* Empty Cart */
+.empty-cart {
+    background: white;
+    border-radius: var(--radius);
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.empty-icon {
+    font-size: 5rem;
+    margin-bottom: 25px;
+    opacity: 0.3;
+}
+
+.empty-cart h2 {
+    font-size: 2rem;
+    color: var(--text);
+    margin-bottom: 15px;
+}
+
+.empty-cart p {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.empty-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 30px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+}
+
+.btn-secondary:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-3px);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .cart-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .cart-item {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .item-actions {
+        align-items: stretch;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .empty-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Promo code suggestions
+    document.querySelectorAll('.promo-tag').forEach(function(tag) {
+        tag.addEventListener('click', function() {
+            const promoInput = document.getElementById('promoCode');
+            promoInput.value = this.textContent;
+            promoInput.focus();
+        });
+    });
+    
+    // Apply promo code
+    const applyBtn = document.querySelector('.btn-apply');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function() {
+            const promoCode = document.getElementById('promoCode').value.trim();
+            if (promoCode) {
+                // In a real app, you would make an AJAX request here
+                alert(`Đã áp dụng mã giảm giá: ${promoCode}`);
+            } else {
+                alert('Vui lòng nhập mã giảm giá');
+            }
+        });
+    }
+    
+    // Update cart count in header (if you have one)
+    function updateCartCount() {
+        const cartItems = document.querySelectorAll('.cart-item');
+        const cartCount = cartItems.length;
+        
+        // Update cart count in navbar (if exists)
+        const cartCountElement = document.querySelector('.cart-count');
+        if (cartCountElement) {
+            cartCountElement.textContent = cartCount;
+            cartCountElement.style.display = cartCount > 0 ? 'flex' : 'none';
+        }
+    }
+    
+    updateCartCount();
+});
+</script>
+{% endblock %}

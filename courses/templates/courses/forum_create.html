@@ -1,0 +1,1313 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<div class="forum-create-page">
+    <!-- Navigation -->
+    <div class="create-navigation">
+        <a href="{% url 'forum_list' %}" class="nav-back">
+            <span>←</span>
+            <span>Quay lại diễn đàn</span>
+        </a>
+        <div class="nav-progress">
+            <div class="progress-step active">1</div>
+            <div class="progress-step">2</div>
+            <div class="progress-step">3</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="create-wrapper">
+            <!-- Left: Form -->
+            <div class="create-form-section">
+                <div class="form-header">
+                    <h1>📝 Tạo bài viết mới</h1>
+                    <p class="subtitle">Chia sẻ kiến thức, thảo luận và kết nối với cộng đồng</p>
+                </div>
+
+                <form method="post" class="forum-create-form" id="createForm">
+                    {% csrf_token %}
+                    
+                    <!-- Step 1: Basic Info -->
+                    <div class="form-step active" id="step1">
+                        <div class="step-header">
+                            <span class="step-number">1</span>
+                            <h3>Thông tin cơ bản</h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="title" class="form-label">
+                                <span>📌 Tiêu đề bài viết</span>
+                                <span class="required">*</span>
+                            </label>
+                            <input type="text" id="title" name="title" required 
+                                   placeholder="Nhập tiêu đề hấp dẫn, rõ ràng..." 
+                                   maxlength="200"
+                                   class="form-input title-input">
+                            <div class="form-footer">
+                                <small class="char-count">0/200 ký tự</small>
+                                <small class="form-hint">Tiêu đề nên dưới 60 ký tự để hiển thị tốt nhất</small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="content" class="form-label">
+                                <span>📝 Nội dung chi tiết</span>
+                                <span class="required">*</span>
+                            </label>
+                            <div class="editor-toolbar">
+                                <button type="button" class="tool-btn" data-tag="h2" title="Tiêu đề lớn">H2</button>
+                                <button type="button" class="tool-btn" data-tag="h3" title="Tiêu đề nhỏ">H3</button>
+                                <button type="button" class="tool-btn" data-tag="bold" title="In đậm"><b>B</b></button>
+                                <button type="button" class="tool-btn" data-tag="italic" title="In nghiêng"><i>I</i></button>
+                                <button type="button" class="tool-btn" data-tag="code" title="Code">{"{}"}</button>
+                                <button type="button" class="tool-btn" data-tag="link" title="Liên kết">🔗</button>
+                                <button type="button" class="tool-btn" data-tag="list" title="Danh sách">📋</button>
+                                <button type="button" class="tool-btn" data-tag="quote" title="Trích dẫn">❝</button>
+                            </div>
+                            <textarea id="content" name="content" required 
+                                      placeholder="Chia sẻ nội dung chi tiết của bạn...&#10;&#10;Hỗ trợ định dạng Markdown cơ bản" 
+                                      rows="15"
+                                      class="form-textarea content-input"></textarea>
+                            <div class="form-footer">
+                                <small class="form-hint">Nhấn Ctrl+Enter để xem trước</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Advanced Options -->
+                    <div class="form-step" id="step2">
+                        <div class="step-header">
+                            <span class="step-number">2</span>
+                            <h3>Tùy chọn nâng cao</h3>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="category" class="form-label">📁 Danh mục</label>
+                                <select id="category" name="category" class="form-select">
+                                    <option value="">Chọn danh mục...</option>
+                                    <option value="question">❓ Hỏi đáp</option>
+                                    <option value="tutorial">📚 Hướng dẫn</option>
+                                    <option value="discussion">💬 Thảo luận</option>
+                                    <option value="share">🎁 Chia sẻ</option>
+                                    <option value="news">📢 Tin tức</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group half">
+                                <label for="difficulty" class="form-label">🎯 Độ khó</label>
+                                <select id="difficulty" name="difficulty" class="form-select">
+                                    <option value="">Tất cả cấp độ</option>
+                                    <option value="beginner">👶 Cơ bản</option>
+                                    <option value="intermediate">👨‍🎓 Trung cấp</option>
+                                    <option value="advanced">👨‍💻 Nâng cao</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tags" class="form-label">
+                                <span>🏷️ Thẻ (Tags)</span>
+                                <small class="optional">Tùy chọn</small>
+                            </label>
+                            <div class="tags-input-container">
+                                <div class="tags-display" id="tagsDisplay"></div>
+                                <input type="text" id="tagsInput" 
+                                       placeholder="Nhập tag và nhấn Enter hoặc dấu phẩy..."
+                                       class="form-input">
+                            </div>
+                            <input type="hidden" id="tags" name="tags">
+                            <div class="form-footer">
+                                <small class="form-hint">Tối đa 5 tags, mỗi tag 2-20 ký tự</small>
+                                <div class="popular-tags">
+                                    <span>Phổ biến:</span>
+                                    <button type="button" class="tag-suggestion" data-tag="python">python</button>
+                                    <button type="button" class="tag-suggestion" data-tag="django">django</button>
+                                    <button type="button" class="tag-suggestion" data-tag="javascript">javascript</button>
+                                    <button type="button" class="tag-suggestion" data-tag="html-css">html-css</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">🔒 Quyền riêng tư</label>
+                            <div class="privacy-options">
+                                <label class="radio-option">
+                                    <input type="radio" name="privacy" value="public" checked>
+                                    <span class="radio-content">
+                                        <span class="radio-icon">🌍</span>
+                                        <span class="radio-text">
+                                            <strong>Công khai</strong>
+                                            <small>Tất cả mọi người đều có thể xem</small>
+                                        </span>
+                                    </span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="privacy" value="logged_in">
+                                    <span class="radio-content">
+                                        <span class="radio-icon">👥</span>
+                                        <span class="radio-text">
+                                            <strong>Thành viên</strong>
+                                            <small>Chỉ thành viên đăng nhập</small>
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Preview & Publish -->
+                    <div class="form-step" id="step3">
+                        <div class="step-header">
+                            <span class="step-number">3</span>
+                            <h3>Xem trước & Đăng bài</h3>
+                        </div>
+                        
+                        <div class="preview-card">
+                            <div class="preview-header">
+                                <div class="preview-meta">
+                                    <div class="preview-avatar">{{ user.username|slice:":1"|upper }}</div>
+                                    <div class="preview-info">
+                                        <strong class="preview-author">{{ user.username }}</strong>
+                                        <span class="preview-time">vừa xong</span>
+                                    </div>
+                                </div>
+                                <div class="preview-category">
+                                    <span class="category-badge" id="previewCategory">📝 Bài viết</span>
+                                </div>
+                            </div>
+                            
+                            <h2 class="preview-title" id="previewTitle">Tiêu đề bài viết</h2>
+                            
+                            <div class="preview-content" id="previewContent">
+                                <p>Nội dung bài viết sẽ hiển thị ở đây...</p>
+                            </div>
+                            
+                            <div class="preview-footer">
+                                <div class="preview-tags" id="previewTags">
+                                    <span class="tag">mẫu</span>
+                                </div>
+                                <div class="preview-stats">
+                                    <span>👁️ 0 lượt xem</span>
+                                    <span>💬 0 bình luận</span>
+                                    <span>👍 0 lượt thích</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="publish-options">
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="subscribe" checked>
+                                <span>Theo dõi bài viết này để nhận thông báo</span>
+                            </label>
+                            <label class="checkbox-option">
+                                <input type="checkbox" name="allow_comments" checked>
+                                <span>Cho phép bình luận</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Form Navigation -->
+                    <div class="form-navigation">
+                        <button type="button" class="btn-prev" id="btnPrev" disabled>
+                            <span>←</span>
+                            <span>Quay lại</span>
+                        </button>
+                        
+                        <div class="step-indicators">
+                            <button type="button" class="step-indicator active" data-step="1">1</button>
+                            <button type="button" class="step-indicator" data-step="2">2</button>
+                            <button type="button" class="step-indicator" data-step="3">3</button>
+                        </div>
+                        
+                        <button type="button" class="btn-next" id="btnNext">
+                            <span>Tiếp theo</span>
+                            <span>→</span>
+                        </button>
+                        
+                        <button type="submit" class="btn-submit" id="btnSubmit" style="display: none;">
+                            <span>🚀 Đăng bài ngay</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Tips & Guidelines -->
+            <div class="create-sidebar">
+                <div class="sidebar-section">
+                    <h3>💡 Mẹo viết bài hay</h3>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <div class="tip-icon">🎯</div>
+                            <div class="tip-content">
+                                <strong>Tiêu đề rõ ràng</strong>
+                                <p>Mô tả ngắn gọn nội dung chính, tránh tiêu đề quá dài</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">📝</div>
+                            <div class="tip-content">
+                                <strong>Nội dung chất lượng</strong>
+                                <p>Chia sẻ kinh nghiệm thực tế, có ví dụ minh họa</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">💻</div>
+                            <div class="tip-content">
+                                <strong>Định dạng code</strong>
+                                <p>Sử dụng markdown để code dễ đọc và sao chép</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">🏷️</div>
+                            <div class="tip-content">
+                                <strong>Tags phù hợp</strong>
+                                <p>Chọn tags liên quan để bài viết dễ tìm kiếm</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>📋 Quy định đăng bài</h3>
+                    <div class="guidelines">
+                        <p>✓ Không spam, quảng cáo</p>
+                        <p>✓ Tôn trọng cộng đồng</p>
+                        <p>✓ Đúng chuyên mục</p>
+                        <p>✓ Không vi phạm bản quyền</p>
+                        <p>✓ Nội dung có ích cho cộng đồng</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>⚡ Hỗ trợ nhanh</h3>
+                    <div class="quick-actions">
+                        <a href="#" class="quick-action">
+                            <span class="action-icon">📚</span>
+                            <span class="action-text">Xem bài viết mẫu</span>
+                        </a>
+                        <a href="#" class="quick-action">
+                            <span class="action-icon">🔧</span>
+                            <span class="action-text">Hướng dẫn Markdown</span>
+                        </a>
+                        <a href="#" class="quick-action">
+                            <span class="action-icon">❓</span>
+                            <span class="action-text">Câu hỏi thường gặp</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light: #f8fafc;
+    --border: #e2e8f0;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+/* Forum Create Page */
+.forum-create-page {
+    background: var(--light);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Navigation */
+.create-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+}
+
+.nav-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.nav-back:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateX(-5px);
+}
+
+.nav-progress {
+    display: flex;
+    gap: 10px;
+}
+
+.progress-step {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--muted);
+    transition: var(--transition);
+}
+
+.progress-step.active {
+    background: var(--accent);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Create Wrapper */
+.create-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+/* Form Section */
+.create-form-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+}
+
+.form-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.form-header h1 {
+    color: var(--text);
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Form Steps */
+.form-step {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.form-step.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.step-header h3 {
+    color: var(--text);
+    font-size: 1.4rem;
+    margin: 0;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.required {
+    color: var(--danger);
+    font-size: 1.2rem;
+}
+
+.optional {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: normal;
+}
+
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: var(--transition);
+    background: white;
+}
+
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+    min-height: 200px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.char-count {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.form-hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* Editor Toolbar */
+.editor-toolbar {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    padding: 10px;
+    background: var(--light);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.tool-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    min-width: 36px;
+}
+
+.tool-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* Form Row */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Tags Input */
+.tags-input-container {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    background: white;
+}
+
+.tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    min-height: 40px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.tag-remove {
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.tag-remove:hover {
+    opacity: 1;
+}
+
+#tagsInput {
+    border: none;
+    padding: 5px;
+    margin: 0;
+}
+
+#tagsInput:focus {
+    box-shadow: none;
+}
+
+.popular-tags {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tag-suggestion {
+    padding: 4px 10px;
+    background: var(--light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tag-suggestion:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* Privacy Options */
+.privacy-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.radio-option:hover {
+    border-color: var(--accent);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.radio-option input:checked + .radio-content {
+    color: var(--accent);
+}
+
+.radio-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+}
+
+.radio-icon {
+    font-size: 1.5rem;
+}
+
+.radio-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.radio-text strong {
+    font-size: 1rem;
+}
+
+.radio-text small {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* Preview Card */
+.preview-card {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.preview-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.preview-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-author {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.preview-time {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.category-badge {
+    padding: 6px 12px;
+    background: var(--light);
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.preview-title {
+    color: var(--text);
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+    line-height: 1.3;
+}
+
+.preview-content {
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.preview-content p {
+    margin-bottom: 15px;
+}
+
+.preview-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.preview-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.preview-stats {
+    display: flex;
+    gap: 20px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Publish Options */
+.publish-options {
+    background: var(--light);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    cursor: pointer;
+}
+
+.checkbox-option:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+
+/* Form Navigation */
+.form-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.btn-prev, .btn-next, .btn-submit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    font-family: inherit;
+}
+
+.btn-prev {
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+
+.btn-prev:hover:not(:disabled) {
+    background: white;
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateX(-5px);
+}
+
+.btn-prev:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-next {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-next:hover {
+    background: var(--accent-2);
+    transform: translateX(5px);
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, var(--success), #34d399);
+    color: white;
+}
+
+.btn-submit:hover {
+    background: linear-gradient(135deg, #0da271, #10b981);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.2);
+}
+
+.step-indicators {
+    display: flex;
+    gap: 10px;
+}
+
+.step-indicator {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: var(--light);
+    color: var(--muted);
+    border: 2px solid var(--border);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.step-indicator.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: scale(1.1);
+}
+
+.step-indicator:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Sidebar */
+.create-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.sidebar-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.sidebar-section h3 {
+    color: var(--text);
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.tip-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: var(--light);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.tip-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.tip-content strong {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text);
+}
+
+.tip-content p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.guidelines {
+    color: var(--text);
+    line-height: 1.8;
+}
+
+.guidelines p {
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quick-action {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 15px;
+    background: var(--light);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+}
+
+.quick-action:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateX(5px);
+}
+
+.action-icon {
+    font-size: 1.2rem;
+}
+
+.action-text {
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .create-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .create-navigation {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .form-header h1 {
+        font-size: 1.6rem;
+    }
+    
+    .create-form-section {
+        padding: 20px;
+    }
+    
+    .form-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .btn-prev, .btn-next, .btn-submit {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .step-indicators {
+        order: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createForm');
+    const steps = document.querySelectorAll('.form-step');
+    const stepIndicators = document.querySelectorAll('.step-indicator');
+    const navProgress = document.querySelectorAll('.progress-step');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const titleInput = document.getElementById('title');
+    const contentInput = document.getElementById('content');
+    const charCount = document.querySelector('.char-count');
+    const tagsInput = document.getElementById('tagsInput');
+    const tagsDisplay = document.getElementById('tagsDisplay');
+    const tagsHidden = document.getElementById('tags');
+    const toolButtons = document.querySelectorAll('.tool-btn');
+    
+    let currentStep = 1;
+    const tags = [];
+    const maxTags = 5;
+    
+    // Character counter
+    titleInput.addEventListener('input', function() {
+        const count = this.value.length;
+        charCount.textContent = `${count}/200 ký tự`;
+        
+        if (count > 180) {
+            charCount.style.color = 'var(--danger)';
+        } else if (count > 150) {
+            charCount.style.color = 'var(--warning)';
+        } else {
+            charCount.style.color = 'var(--muted)';
+        }
+    });
+    
+    // Editor toolbar
+    toolButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tag = this.dataset.tag;
+            const start = contentInput.selectionStart;
+            const end = contentInput.selectionEnd;
+            const selectedText = contentInput.value.substring(start, end);
+            let newText = '';
+            
+            switch(tag) {
+                case 'h2':
+                    newText = `## ${selectedText || 'Tiêu đề'}\n\n`;
+                    break;
+                case 'h3':
+                    newText = `### ${selectedText || 'Tiêu đề nhỏ'}\n\n`;
+                    break;
+                case 'bold':
+                    newText = `**${selectedText || 'văn bản'}**`;
+                    break;
+                case 'italic':
+                    newText = `*${selectedText || 'văn bản'}*`;
+                    break;
+                case 'code':
+                    newText = selectedText ? `\`${selectedText}\`` : '`code`';
+                    break;
+                case 'link':
+                    newText = `[${selectedText || 'văn bản'}](https://example.com)`;
+                    break;
+                case 'list':
+                    newText = selectedText ? `- ${selectedText}` : '- Mục danh sách\n- Mục danh sách';
+                    break;
+                case 'quote':
+                    newText = `> ${selectedText || 'trích dẫn'}`;
+                    break;
+            }
+            
+            contentInput.setRangeText(newText, start, end, 'end');
+            contentInput.focus();
+        });
+    });
+    
+    // Tags input
+    tagsInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTag(this.value.trim().replace(',', ''));
+            this.value = '';
+        }
+    });
+    
+    // Popular tags
+    document.querySelectorAll('.tag-suggestion').forEach(button => {
+        button.addEventListener('click', function() {
+            addTag(this.dataset.tag);
+        });
+    });
+    
+    function addTag(tag) {
+        if (!tag || tags.length >= maxTags) return;
+        
+        tag = tag.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        if (tag.length < 2 || tag.length > 20) return;
+        if (tags.includes(tag)) return;
+        
+        tags.push(tag);
+        updateTagsDisplay();
+        updatePreview();
+    }
+    
+    function removeTag(tag) {
+        const index = tags.indexOf(tag);
+        if (index > -1) {
+            tags.splice(index, 1);
+            updateTagsDisplay();
+            updatePreview();
+        }
+    }
+    
+    function updateTagsDisplay() {
+        tagsDisplay.innerHTML = '';
+        tags.forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag';
+            tagElement.innerHTML = `
+                ${tag}
+                <span class="tag-remove" onclick="removeTag('${tag}')">×</span>
+            `;
+            tagsDisplay.appendChild(tagElement);
+        });
+        
+        tagsHidden.value = tags.join(',');
+    }
+    
+    // Step navigation
+    function showStep(step) {
+        // Hide all steps
+        steps.forEach(s => s.classList.remove('active'));
+        stepIndicators.forEach(s => s.classList.remove('active'));
+        navProgress.forEach(s => s.classList.remove('active'));
+        
+        // Show current step
+        document.getElementById(`step${step}`).classList.add('active');
+        document.querySelector(`.step-indicator[data-step="${step}"]`).classList.add('active');
+        navProgress[step - 1].classList.add('active');
+        
+        // Update navigation buttons
+        btnPrev.disabled = step === 1;
+        
+        if (step === 3) {
+            btnNext.style.display = 'none';
+            btnSubmit.style.display = 'flex';
+            updatePreview();
+        } else {
+            btnNext.style.display = 'flex';
+            btnSubmit.style.display = 'none';
+        }
+        
+        currentStep = step;
+    }
+    
+    btnPrev.addEventListener('click', () => showStep(currentStep - 1));
+    btnNext.addEventListener('click', () => showStep(currentStep + 1));
+    
+    stepIndicators.forEach(indicator => {
+        indicator.addEventListener('click', function() {
+            showStep(parseInt(this.dataset.step));
+        });
+    });
+    
+    // Update preview
+    function updatePreview() {
+        document.getElementById('previewTitle').textContent = 
+            titleInput.value || 'Tiêu đề bài viết';
+        
+        document.getElementById('previewContent').textContent = 
+            contentInput.value || 'Nội dung sẽ hiển thị ở đây...';
+        
+        const categorySelect = document.getElementById('category');
+        const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
+        document.getElementById('previewCategory').textContent = categoryText;
+        
+        const tagsContainer = document.getElementById('previewTags');
+        tagsContainer.innerHTML = '';
+        tags.forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag';
+            tagElement.textContent = tag;
+            tagsContainer.appendChild(tagElement);
+        });
+    }
+    
+    // Keyboard shortcuts
+    contentInput.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            showStep(3);
+        }
+    });
+    
+    // Form validation before submit
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+        
+        if (!title) {
+            showStep(1);
+            titleInput.focus();
+            alert('Vui lòng nhập tiêu đề bài viết!');
+            return;
+        }
+        
+        if (!content) {
+            showStep(1);
+            contentInput.focus();
+            alert('Vui lòng nhập nội dung bài viết!');
+            return;
+        }
+        
+        if (title.length > 200) {
+            showStep(1);
+            titleInput.focus();
+            alert('Tiêu đề không được vượt quá 200 ký tự!');
+            return;
+        }
+        
+        if (tags.length > maxTags) {
+            showStep(2);
+            alert(`Chỉ được thêm tối đa ${maxTags} tags!`);
+            return;
+        }
+        
+        // If all validation passes, submit the form
+        this.submit();
+    });
+    
+    // Initialize
+    updateTagsDisplay();
+    showStep(1);
+});
+
+// Make removeTag function available globally
+function removeTag(tag) {
+    const tags = Array.from(document.querySelectorAll('.tag')).map(t => 
+        t.textContent.replace('×', '').trim()
+    );
+    const index = tags.indexOf(tag);
+    if (index > -1) {
+        tags.splice(index, 1);
+        // Update tags array in main script context
+        window.tags = tags.filter(t => t !== tag);
+        window.updateTagsDisplay && window.updateTagsDisplay();
+        window.updatePreview && window.updatePreview();
+    }
+}
+</script>
+{% endblock %}

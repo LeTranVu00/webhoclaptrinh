@@ -1,0 +1,1154 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<!-- Course Detail Section -->
+<div class="course-detail-section">
+    <div class="container">
+        <!-- Breadcrumb tối ưu nhất -->
+        <div class="breadcrumb-optimized" id="breadcrumb">
+            <div class="breadcrumb-nav">
+                <a href="/" class="crumb-home">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>Trang chủ</span>
+                </a>
+                
+                <div class="crumb-separator">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+                
+                <a href="/" class="crumb-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l7-7 3 3-7 7-7-7 3-3 4 4V4h2v16h-2z"></path>
+                    </svg>
+                    <span>Khóa học</span>
+                </a>
+                
+                <div class="crumb-separator">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+                
+                <div class="crumb-current">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                    <span>{{ course.title|truncatechars:25 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Course Main Content -->
+        <div class="course-main-content">
+            <!-- Left Column: Course Info -->
+            <div class="course-info-column">
+                <!-- Course Header -->
+                <div class="course-header-detail">
+                    <div class="course-category-tag">
+                        {{ course.get_category_display|default:"Lập trình" }}
+                    </div>
+                    <h1 class="course-title-detail">{{ course.title }}</h1>
+                    
+                    <div class="course-meta-info">
+                        <div class="meta-item">
+                            <span class="meta-icon">📅</span>
+                            <span>Ngày tạo: {{ course.created_at|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-icon">👨‍🎓</span>
+                            <span>{{ course.enrollment_count|default:"0" }} học viên</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-icon">⏱️</span>
+                            <span>{{ course.duration|default:"8 giờ" }} học</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Course Description -->
+                <div class="course-description-box">
+                    <div class="section-title">
+                        <h3>📖 Mô tả khóa học</h3>
+                        <div class="title-line"></div>
+                    </div>
+                    <p class="course-full-description">{{ course.description|linebreaks }}</p>
+                </div>
+                
+                <!-- Course Stats -->
+                <div class="course-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <h4>Đánh giá</h4>
+                            <div class="stat-value">{{ average_rating|floatformat:1 }}/5.0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <h4>Bài học</h4>
+                            <div class="stat-value">{{ course.lesson_count|default:"12" }}</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <h4>Cấp độ</h4>
+                            <div class="stat-value">{{ course.level|default:"Cơ bản" }}</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-content">
+                            <h4>Chứng chỉ</h4>
+                            <div class="stat-value">Có</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Course Actions & Price -->
+            <div class="course-actions-column">
+                <div class="course-price-card">
+                    <!-- Price Display -->
+                    <div class="price-display-main">
+                        <div class="price-current">
+                            <span class="price-amount">{{ course.price|floatformat:0 }}</span>
+                            <span class="price-currency">VNĐ</span>
+                        </div>
+                        <div class="price-note">Giá đã bao gồm VAT</div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        {% if user.is_authenticated %}
+                            {% if user_has_purchased %}
+                                <a href="{% url 'learning_path' course.id %}" class="btn-learning-path">
+                                    <span>🎯</span>
+                                    <span>Vào học ngay</span>
+                                </a>
+                            {% else %}
+                                <form action="/add-to-cart/{{ course.id }}/" method="post" class="action-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-add-cart">
+                                        <span>🛒</span>
+                                        <span>Thêm vào giỏ hàng</span>
+                                    </button>
+                                </form>
+                                
+                                <form action="/checkout-direct/{{ course.id }}/" method="post" class="action-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-buy-now">
+                                        <span>⚡</span>
+                                        <span>Mua ngay</span>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <div class="login-required-alert">
+                                <div class="alert-icon">🔒</div>
+                                <div class="alert-content">
+                                    <h4>Đăng nhập để mua khóa học</h4>
+                                    <p>Bạn cần đăng nhập để thêm khóa học vào giỏ hàng hoặc mua ngay.</p>
+                                    <div class="auth-buttons">
+                                        <a href="/accounts/login/" class="btn-login">🔐 Đăng nhập</a>
+                                        <a href="/accounts/signup/" class="btn-signup">📝 Đăng ký</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Course Features -->
+                    <div class="course-features-list">
+                        <h4>🎯 Khóa học bao gồm:</h4>
+                        <ul>
+                            <li><span>✅</span> Video bài giảng chất lượng cao</li>
+                            <li><span>✅</span> Bài tập thực hành có chấm điểm</li>
+                            <li><span>✅</span> Tài liệu học tập đầy đủ</li>
+                            <li><span>✅</span> Hỗ trợ từ giảng viên 24/7</li>
+                            <li><span>✅</span> Chứng chỉ hoàn thành có xác thực</li>
+                            <li><span>✅</span> Truy cập trọn đời khóa học</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Back Button -->
+                    <a href="/" class="btn-back-to-list">
+                        <span>←</span>
+                        <span>Quay lại danh sách khóa học</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reviews Section -->
+        <div class="reviews-section-detail">
+            <div class="section-title">
+                <h2>⭐ Đánh giá khóa học</h2>
+                <div class="title-line"></div>
+            </div>
+            
+            <!-- Rating Summary -->
+            <div class="rating-summary-card">
+                <div class="rating-overview">
+                    <div class="average-rating-display">
+                        <div class="rating-number-large">{{ average_rating|floatformat:1 }}</div>
+                        <div class="rating-stars-large">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= average_rating %}
+                                    <span class="star-filled">★</span>
+                                {% else %}
+                                    <span class="star-empty">☆</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="rating-count">{{ total_reviews }} đánh giá</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Review Form -->
+            {% if user.is_authenticated and user_has_purchased and not user_review %}
+            <div class="review-form-card">
+                <h3>📝 Viết đánh giá của bạn</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="rating-input-group">
+                        <label>Đánh giá của bạn:</label>
+                        <div class="star-rating-select">
+                            {% for i in "54321" %}
+                                <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}">
+                                <label for="star{{ i }}">⭐</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="comment-input-group">
+                        <textarea name="comment" placeholder="Chia sẻ trải nghiệm của bạn về khóa học này..." 
+                                  required rows="4" maxlength="500"></textarea>
+                        <div class="char-count"><span id="charCount">0</span>/500 ký tự</div>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit-review">
+                        <span>📤</span>
+                        <span>Gửi đánh giá</span>
+                    </button>
+                </form>
+            </div>
+            {% elif user_review %}
+            <div class="your-review-card">
+                <h3>📌 Đánh giá của bạn</h3>
+                <div class="review-item featured">
+                    <div class="reviewer-info">
+                        <div class="reviewer-avatar">{{ user.username|slice:":1"|upper }}</div>
+                        <div class="reviewer-details">
+                            <div class="reviewer-name">Bạn</div>
+                            <div class="review-meta">
+                                <div class="review-stars">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= user_review.rating %}
+                                            <span class="star-filled">★</span>
+                                        {% else %}
+                                            <span class="star-empty">☆</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="review-date">{{ user_review.created_at|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-content">
+                        <p>{{ user_review.comment }}</p>
+                    </div>
+                </div>
+            </div>
+            {% elif user.is_authenticated and not user_has_purchased %}
+            <div class="purchase-notice">
+                <div class="notice-icon">📝</div>
+                <div class="notice-content">
+                    <h4>Bạn cần mua khóa học này để đánh giá</h4>
+                    <p>Hãy mua khóa học và trải nghiệm trước khi chia sẻ đánh giá của bạn.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Reviews List -->
+            <div class="reviews-list-container">
+                <h3>💬 Đánh giá từ học viên</h3>
+                
+                {% for review in reviews %}
+                <div class="review-item">
+                    <div class="reviewer-info">
+                        <div class="reviewer-avatar">{{ review.user.username|slice:":1"|upper }}</div>
+                        <div class="reviewer-details">
+                            <div class="reviewer-name">{{ review.user.username }}</div>
+                            <div class="review-meta">
+                                <div class="review-stars">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <span class="star-filled">★</span>
+                                        {% else %}
+                                            <span class="star-empty">☆</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="review-date">{{ review.created_at|date:"d/m/Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="review-content">
+                        <p>{{ review.comment }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="no-reviews-message">
+                    <div class="no-reviews-icon">💬</div>
+                    <h4>Chưa có đánh giá nào</h4>
+                    <p>Hãy là người đầu tiên đánh giá khóa học này!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== VARIABLES ===== */
+:root {
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --success: #10b981;
+    --text: #1e293b;
+    --muted: #64748b;
+    --bg: #f8fafc;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+/* ===== OPTIMIZED BREADCRUMB ===== */
+.breadcrumb-optimized {
+    margin-bottom: 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    transition: var(--transition);
+}
+
+/* Hiệu ứng khi cuộn */
+.breadcrumb-optimized.sticky {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0.25rem 0;
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    transition: var(--transition);
+}
+
+/* Khi breadcrumb sticky, làm nhỏ lại */
+.breadcrumb-optimized.sticky .breadcrumb-nav {
+    padding: 0.5rem 1.25rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.crumb-home,
+.crumb-link,
+.crumb-current {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.crumb-home,
+.crumb-link {
+    color: var(--accent);
+}
+
+.crumb-home:hover,
+.crumb-link:hover {
+    background: #f1f5f9;
+    color: var(--accent-2);
+    transform: translateY(-1px);
+}
+
+.crumb-current {
+    color: var(--text);
+    font-weight: 600;
+    background: #f8fafc;
+    cursor: default;
+}
+
+.crumb-separator {
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+}
+
+/* ===== COURSE DETAIL STYLES ===== */
+.course-detail-section {
+    background: var(--bg);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+/* Main Content Layout */
+.course-main-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    margin-bottom: 4rem;
+}
+
+/* Left Column - Course Info */
+.course-header-detail {
+    margin-bottom: 2.5rem;
+}
+
+.course-category-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.course-title-detail {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+}
+
+.course-meta-info {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.meta-icon {
+    font-size: 1.2rem;
+}
+
+/* Course Description */
+.course-description-box {
+    background: white;
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 2.5rem;
+}
+
+.section-title {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.section-title h2, 
+.section-title h3 {
+    font-size: 1.8rem;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+}
+
+.title-line {
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 2px;
+}
+
+.course-full-description {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 1.05rem;
+}
+
+/* Course Stats Grid */
+.course-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    color: var(--accent);
+}
+
+.stat-content h4 {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+/* Right Column - Price & Actions */
+.course-price-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    position: sticky;
+    top: 2rem;
+}
+
+.price-display-main {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.price-current {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.price-amount {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.price-currency {
+    font-size: 1.5rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.price-note {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.action-form {
+    margin: 0;
+}
+
+.btn-add-cart,
+.btn-buy-now,
+.btn-learning-path {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+    text-align: center;
+}
+
+.btn-add-cart {
+    background: linear-gradient(135deg, var(--success), #34d399);
+    color: white;
+}
+
+.btn-add-cart:hover {
+    background: linear-gradient(135deg, #0da271, #10b981);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3);
+}
+
+.btn-buy-now {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.btn-buy-now:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(239, 68, 68, 0.3);
+}
+
+.btn-learning-path {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    text-decoration: none;
+}
+
+.btn-learning-path:hover {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
+}
+
+/* Login Required Alert */
+.login-required-alert {
+    background: #fef3c7;
+    border: 2px solid #fbbf24;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.alert-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.alert-content h4 {
+    color: #92400e;
+    margin-bottom: 0.5rem;
+}
+
+.alert-content p {
+    color: #92400e;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-login,
+.btn-signup {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.btn-login {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-login:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.btn-signup {
+    background: white;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+}
+
+.btn-signup:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Course Features */
+.course-features-list {
+    margin-bottom: 2rem;
+}
+
+.course-features-list h4 {
+    font-size: 1.2rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.course-features-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.course-features-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: var(--muted);
+}
+
+.course-features-list li span {
+    color: var(--success);
+    font-size: 1.1rem;
+}
+
+/* Back Button */
+.btn-back-to-list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 1rem;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    text-align: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.btn-back-to-list:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* ===== REVIEWS SECTION ===== */
+.reviews-section-detail {
+    background: white;
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    box-shadow: var(--shadow);
+    margin-top: 2rem;
+}
+
+.rating-summary-card {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.rating-overview {
+    display: flex;
+    justify-content: center;
+}
+
+.average-rating-display {
+    text-align: center;
+}
+
+.rating-number-large {
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.rating-stars-large {
+    font-size: 2rem;
+    margin: 1rem 0;
+}
+
+.star-filled {
+    color: #fbbf24;
+}
+
+.star-empty {
+    color: #e2e8f0;
+}
+
+.rating-count {
+    color: var(--muted);
+    font-size: 1.1rem;
+}
+
+/* Review Form */
+.review-form-card {
+    background: #f8fafc;
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.review-form-card h3 {
+    color: var(--text);
+    margin-bottom: 1.5rem;
+}
+
+.rating-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.rating-input-group label {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.star-rating-select {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.star-rating-select input {
+    display: none;
+}
+
+.star-rating-select label {
+    font-size: 2.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    margin: 0;
+}
+
+.star-rating-select input:checked ~ label,
+.star-rating-select label:hover,
+.star-rating-select label:hover ~ label {
+    color: #fbbf24;
+}
+
+.star-rating-select input:checked + label {
+    color: #fbbf24;
+}
+
+.comment-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.comment-input-group textarea {
+    width: 100%;
+    padding: 1.25rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 120px;
+    transition: var(--transition);
+    font-family: inherit;
+}
+
+.comment-input-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.char-count {
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.btn-submit-review {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: var(--transition);
+}
+
+.btn-submit-review:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Reviews List */
+.reviews-list-container {
+    margin-top: 2rem;
+}
+
+.reviews-list-container h3 {
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.review-item {
+    background: #f8fafc;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.review-item.featured {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 2px solid #bae6fd;
+}
+
+.reviewer-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.reviewer-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.reviewer-details {
+    flex: 1;
+}
+
+.reviewer-name {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.review-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.review-stars {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.review-date {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.review-content p {
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* No Reviews */
+.no-reviews-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--muted);
+}
+
+.no-reviews-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.no-reviews-message h4 {
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+
+/* Purchase Notice */
+.purchase-notice {
+    background: #fef3c7;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.notice-icon {
+    font-size: 2rem;
+}
+
+.notice-content h4 {
+    color: #92400e;
+    margin-bottom: 0.25rem;
+}
+
+.notice-content p {
+    color: #92400e;
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .course-main-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .course-price-card {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .course-title-detail {
+        font-size: 2rem;
+    }
+    
+    .course-meta-info {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .course-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 1.25rem;
+    }
+    
+    .price-amount {
+        font-size: 2.5rem;
+    }
+    
+    .auth-buttons {
+        flex-direction: column;
+    }
+    
+    .rating-number-large {
+        font-size: 3rem;
+    }
+    
+    .rating-stars-large {
+        font-size: 1.5rem;
+    }
+    
+    .reviews-section-detail {
+        padding: 1.5rem;
+    }
+    
+    /* Responsive breadcrumb */
+    .breadcrumb-nav {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .crumb-home span,
+    .crumb-link span,
+    .crumb-current span {
+        display: none;
+    }
+    
+    .crumb-home,
+    .crumb-link,
+    .crumb-current {
+        padding: 0.5rem;
+    }
+}
+</style>
+
+<script>
+// Character counter for review textarea
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.querySelector('textarea[name="comment"]');
+    const charCount = document.getElementById('charCount');
+    
+    if (textarea && charCount) {
+        textarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+        
+        // Initialize count
+        charCount.textContent = textarea.value.length;
+    }
+    
+    // Star rating interaction
+    const starLabels = document.querySelectorAll('.star-rating-select label');
+    starLabels.forEach(label => {
+        label.addEventListener('click', function() {
+            const ratingValue = this.htmlFor.replace('star', '');
+            console.log('Selected rating:', ratingValue);
+        });
+    });
+    
+    // Sticky breadcrumb effect
+    const breadcrumb = document.getElementById('breadcrumb');
+    
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) {
+            breadcrumb.classList.add('sticky');
+        } else {
+            breadcrumb.classList.remove('sticky');
+        }
+    });
+});
+</script>
+{% endblock %}

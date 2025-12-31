@@ -1,0 +1,691 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<!-- About Page -->
+<div class="about-page">
+    <!-- Hero Section -->
+    <div class="about-hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">👋 Chào mừng đến với <span class="highlight">Học Lập Trình</span></h1>
+                    <p class="hero-description">
+                        Nơi biến đam mê công nghệ thành kỹ năng thực tế, 
+                        giúp bạn xây dựng sự nghiệp lập trình vững chắc.
+                    </p>
+                    <a href="courses/templates/courses/course_list.html" class="hero-button">
+                        <span>🎯</span>
+                        <span>Khám phá khóa học</span>
+                    </a>
+                </div>
+                <div class="hero-image">
+                    <div class="code-animation">
+                        <div class="code-line"></div>
+                        <div class="code-line"></div>
+                        <div class="code-line"></div>
+                        <div class="code-line"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mission & Vision -->
+    <div class="mission-vision-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>🎯 Sứ mệnh & Tầm nhìn</h2>
+                <p>Định hướng và giá trị cốt lõi của chúng tôi</p>
+            </div>
+            
+            <div class="mv-grid">
+                <div class="mv-card mission">
+                    <div class="mv-icon">🚀</div>
+                    <h3>Sứ mệnh</h3>
+                    <p>
+                        Cung cấp nền tảng học lập trình chất lượng cao, 
+                        giúp mọi người tiếp cận kiến thức công nghệ dễ dàng 
+                        và phát triển sự nghiệp trong thời đại số.
+                    </p>
+                </div>
+                
+                <div class="mv-card vision">
+                    <div class="mv-icon">🔮</div>
+                    <h3>Tầm nhìn</h3>
+                    <p>
+                        Trở thành hệ sinh thái giáo dục công nghệ hàng đầu, 
+                        đào tạo thế hệ lập trình viên xuất sắc, 
+                        góp phần phát triển nguồn nhân lực công nghệ Việt Nam.
+                    </p>
+                </div>
+                
+                <div class="mv-card values">
+                    <div class="mv-icon">💎</div>
+                    <h3>Giá trị cốt lõi</h3>
+                    <ul>
+                        <li>✅ Chất lượng đào tạo ưu việt</li>
+                        <li>✅ Hỗ trợ học viên tận tâm</li>
+                        <li>✅ Cập nhật công nghệ mới nhất</li>
+                        <li>✅ Cộng đồng học tập tích cực</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="1000">0</div>
+                    <div class="stat-label">👥 Học viên</div>
+                    <div class="stat-desc">Đang theo học</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-number" data-count="50">0</div>
+                    <div class="stat-label">📚 Khóa học</div>
+                    <div class="stat-desc">Chất lượng cao</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-number" data-count="20">0</div>
+                    <div class="stat-label">👨‍🏫 Chuyên gia</div>
+                    <div class="stat-desc">Giảng viên</div>
+                </div>
+                
+                <div class="stat-item">
+                    <div class="stat-number" data-count="99">0</div>
+                    <div class="stat-label">% ⭐</div>
+                    <div class="stat-desc">Hài lòng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Section -->
+    <div class="team-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>👨‍💻 Đội ngũ chuyên gia</h2>
+                <p>Những người truyền cảm hứng và kiến thức cho bạn</p>
+            </div>
+            
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="member-avatar">TN</div>
+                    <h3>Trần Nguyễn</h3>
+                    <div class="member-role">Senior Fullstack Developer</div>
+                    <p>10+ năm kinh nghiệm, chuyên gia về React & Node.js</p>
+                    <div class="member-skills">
+                        <span>React</span>
+                        <span>Node.js</span>
+                        <span>TypeScript</span>
+                    </div>
+                </div>
+                
+                <div class="team-member">
+                    <div class="member-avatar">LM</div>
+                    <h3>Lê Minh</h3>
+                    <div class="member-role">Data Science Expert</div>
+                    <p>Tiến sĩ AI, chuyên gia Machine Learning & Python</p>
+                    <div class="member-skills">
+                        <span>Python</span>
+                        <span>AI/ML</span>
+                        <span>Data Science</span>
+                    </div>
+                </div>
+                
+                <div class="team-member">
+                    <div class="member-avatar">PV</div>
+                    <h3>Phạm Vũ</h3>
+                    <div class="member-role">Mobile Development Lead</div>
+                    <p>Chuyên gia phát triển ứng dụng di động đa nền tảng</p>
+                    <div class="member-skills">
+                        <span>Flutter</span>
+                        <span>React Native</span>
+                        <span>Kotlin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>🎯 Sẵn sàng bắt đầu hành trình?</h2>
+                <p>Tham gia cùng 1000+ học viên đang phát triển sự nghiệp lập trình</p>
+                <div class="cta-buttons">
+                    <a href="/accounts/signup/" class="btn-primary">
+                        <span>🚀</span>
+                        <span>Đăng ký ngay</span>
+                    </a>
+                    <a href="/courses/" class="btn-secondary">
+                        <span>📚</span>
+                        <span>Xem khóa học</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light: #f8fafc;
+    --border: #e2e8f0;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+/* About Page */
+.about-page {
+    background: var(--light);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Hero Section */
+.about-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.about-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+    background-size: cover;
+    opacity: 0.1;
+}
+
+.hero-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.hero-title .highlight {
+    color: #fbbf24;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-description {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.hero-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    color: var(--accent);
+    padding: 15px 30px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: var(--transition);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.hero-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hero-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.code-animation {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 30px;
+    width: 100%;
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+}
+
+.code-line {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    margin-bottom: 15px;
+    border-radius: 4px;
+    animation: pulse 2s infinite;
+}
+
+.code-line:nth-child(2) {
+    width: 80%;
+    animation-delay: 0.2s;
+}
+
+.code-line:nth-child(3) {
+    width: 60%;
+    animation-delay: 0.4s;
+}
+
+.code-line:nth-child(4) {
+    width: 90%;
+    animation-delay: 0.6s;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.5; }
+}
+
+/* Mission & Vision */
+.mission-vision-section {
+    padding: 80px 0;
+    background: white;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-header h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 15px;
+}
+
+.section-header p {
+    color: var(--muted);
+    font-size: 1.1rem;
+}
+
+.mv-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.mv-card {
+    background: var(--light);
+    padding: 40px 30px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    text-align: center;
+}
+
+.mv-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.mv-card.mission {
+    border-top: 5px solid var(--accent);
+}
+
+.mv-card.vision {
+    border-top: 5px solid var(--success);
+}
+
+.mv-card.values {
+    border-top: 5px solid var(--warning);
+}
+
+.mv-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.mv-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+}
+
+.mv-card p {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.mv-card.values ul {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+}
+
+.mv-card.values li {
+    margin-bottom: 10px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Stats Section */
+.stats-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 30px;
+}
+
+.stat-number {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #ffffff, #e2e8f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.stat-desc {
+    opacity: 0.8;
+    font-size: 0.95rem;
+}
+
+/* Team Section */
+.team-section {
+    padding: 80px 0;
+    background: white;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.team-member {
+    background: var(--light);
+    padding: 40px 30px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: var(--transition);
+}
+
+.team-member:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.member-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 auto 20px;
+}
+
+.team-member h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: var(--text);
+}
+
+.member-role {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+}
+
+.team-member p {
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.member-skills {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.member-skills span {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* CTA Section */
+.cta-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: white;
+}
+
+.cta-content {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.cta-content h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+}
+
+.cta-content p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 40px;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 30px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: white;
+    color: #f97316;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    backdrop-filter: blur(10px);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .hero-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .mv-grid,
+    .stats-grid,
+    .team-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .mv-grid,
+    .stats-grid,
+    .team-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .about-hero {
+        padding: 60px 0;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .section-header h2 {
+        font-size: 2rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+    }
+}
+</style>
+
+<script>
+// Animated counter for stats
+document.addEventListener('DOMContentLoaded', function() {
+    const counters = document.querySelectorAll('.stat-number');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target;
+                const target = parseInt(counter.getAttribute('data-count'));
+                const duration = 2000; // 2 seconds
+                const increment = target / (duration / 16); // 60fps
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        counter.textContent = target + (counter.getAttribute('data-count') === '99' ? '%' : '+');
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current) + (counter.getAttribute('data-count') === '99' ? '%' : '+');
+                    }
+                }, 16);
+                
+                observer.unobserve(counter);
+            }
+        });
+    }, { threshold: 0.5 });
+    
+    counters.forEach(counter => {
+        observer.observe(counter);
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            if (targetId === '#') return;
+            
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                window.scrollTo({
+                    top: targetElement.offsetTop - 80,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

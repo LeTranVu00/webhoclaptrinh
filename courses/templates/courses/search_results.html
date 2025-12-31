@@ -1,0 +1,1404 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<div class="search-results-container">
+    <!-- Search Header -->
+    <div class="search-header">
+        <h1>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            Kết quả tìm kiếm
+        </h1>
+        
+        <div class="search-query">
+            <span class="query-label">Từ khóa:</span>
+            <span class="query-text">{{ query }}</span>
+        </div>
+        
+        <div class="search-stats">
+            <span class="stats-count">{{ courses|length }}</span>
+            <span class="stats-label">kết quả được tìm thấy</span>
+            <span class="stats-time">• {{ response_time|default:"0.5" }}s</span>
+        </div>
+    </div>
+
+    <!-- Filters & Sorting -->
+    <div class="results-filters">
+        <div class="filters-left">
+            <div class="filter-dropdown">
+                <select class="filter-select" id="category-filter">
+                    <option value="">Tất cả danh mục</option>
+                    <option value="python">Python</option>
+                    <option value="django">Django</option>
+                    <option value="web">Web Development</option>
+                    <option value="data">Data Science</option>
+                </select>
+            </div>
+            
+            <div class="filter-dropdown">
+                <select class="filter-select" id="price-filter">
+                    <option value="">Tất cả mức giá</option>
+                    <option value="free">Miễn phí</option>
+                    <option value="under500k">Dưới 500K</option>
+                    <option value="500k-1m">500K - 1 triệu</option>
+                    <option value="over1m">Trên 1 triệu</option>
+                </select>
+            </div>
+            
+            <div class="filter-dropdown">
+                <select class="filter-select" id="level-filter">
+                    <option value="">Tất cả cấp độ</option>
+                    <option value="beginner">Người mới bắt đầu</option>
+                    <option value="intermediate">Trung cấp</option>
+                    <option value="advanced">Nâng cao</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="filters-right">
+            <div class="sort-dropdown">
+                <select class="sort-select" id="sort-by">
+                    <option value="relevance">Sắp xếp theo: Độ liên quan</option>
+                    <option value="newest">Mới nhất</option>
+                    <option value="rating">Đánh giá cao nhất</option>
+                    <option value="price-low">Giá thấp đến cao</option>
+                    <option value="price-high">Giá cao đến thấp</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Did You Mean -->
+    {% if similar_queries %}
+    <div class="did-you-mean">
+        <span class="dym-label">Bạn có muốn tìm:</span>
+        <div class="dym-suggestions">
+            {% for suggestion in similar_queries %}
+            <a href="?q={{ suggestion }}" class="dym-suggestion">{{ suggestion }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search Results -->
+    <div class="search-results">
+        {% if courses %}
+        <div class="results-grid">
+            {% for course in courses %}
+            <div class="result-card" data-category="{{ course.category|lower }}" 
+                 data-price="{{ course.price }}" data-level="{{ course.level }}">
+                <div class="result-image">
+                    <div class="image-container" style="background: {{ course.color_gradient|default:'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)' }}">
+                        <span class="course-icon">{{ course.icon|default:"📚" }}</span>
+                        {% if course.is_free %}
+                        <span class="free-badge">MIỄN PHÍ</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="result-actions">
+                        <button class="btn-quick-view" data-course-id="{{ course.id }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            Xem nhanh
+                        </button>
+                        
+                        <button class="btn-wishlist {% if course.in_wishlist %}active{% endif %}" 
+                                data-course-id="{{ course.id }}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                                 stroke="currentColor" stroke-width="2"
+                                 {% if course.in_wishlist %}fill="#ef4444" stroke="#ef4444"{% endif %}>
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="result-content">
+                    <div class="result-header">
+                        <span class="result-category">{{ course.category|default:"Programming" }}</span>
+                        <div class="result-rating">
+                            <span class="stars">★★★★★</span>
+                            <span class="rating-score">{{ course.rating|default:"4.8" }}</span>
+                            <span class="rating-count">({{ course.review_count|default:"120" }})</span>
+                        </div>
+                    </div>
+                    
+                    <h3 class="result-title">
+                        <a href="/course/{{ course.id }}/">{{ course.title }}</a>
+                    </h3>
+                    
+                    <p class="result-description">
+                        {{ course.description|truncatechars:150 }}
+                    </p>
+                    
+                    <div class="result-highlight">
+                        {% if query in course.title or query in course.description %}
+                        <div class="highlight-text">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                                <path d="M2 2l7.586 7.586"/>
+                            </svg>
+                            Tìm thấy từ khóa trong nội dung
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="result-footer">
+                        <div class="result-instructor">
+                            <div class="instructor-avatar">{{ course.instructor_name|first|upper }}</div>
+                            <span class="instructor-name">{{ course.instructor_name|default:"John Doe" }}</span>
+                        </div>
+                        
+                        <div class="result-pricing">
+                            {% if course.is_free %}
+                            <span class="price-free">MIỄN PHÍ</span>
+                            {% else %}
+                            {% if course.discount_price %}
+                            <span class="price-original">{{ course.price }} VNĐ</span>
+                            <span class="price-discount">{{ course.discount_price }} VNĐ</span>
+                            <span class="discount-percent">-{{ course.discount_percent }}%</span>
+                            {% else %}
+                            <span class="price-normal">{{ course.price }} VNĐ</span>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="result-meta">
+                        <div class="meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span>{{ course.duration|default:"8 tuần" }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                            </svg>
+                            <span>{{ course.enrolled_count|default:"1.2k" }} học viên</span>
+                        </div>
+                        <div class="meta-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                            <span>{{ course.lesson_count|default:"24" }} bài học</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-results">
+            <div class="no-results-icon">
+                <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                </svg>
+            </div>
+            <h2>Không tìm thấy kết quả nào</h2>
+            <p>Không có khóa học nào khớp với từ khóa "{{ query }}" của bạn. Hãy thử:</p>
+            
+            <div class="suggestions">
+                <ul>
+                    <li>Kiểm tra lại chính tả của từ khóa</li>
+                    <li>Sử dụng từ khóa ngắn gọn hơn</li>
+                    <li>Thử tìm kiếm với từ khóa khác</li>
+                    <li>Duyệt qua danh mục khóa học</li>
+                </ul>
+            </div>
+            
+            <div class="no-results-actions">
+                <a href="/" class="btn-browse-courses">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    Duyệt tất cả khóa học
+                </a>
+                <button class="btn-clear-search" onclick="window.history.back()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Quay lại
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Related Searches -->
+    {% if related_searches %}
+    <div class="related-searches">
+        <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+            Tìm kiếm liên quan
+        </h3>
+        <div class="related-tags">
+            {% for tag in related_searches %}
+            <a href="?q={{ tag }}" class="related-tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pagination -->
+    {% if paginator.num_pages > 1 %}
+    <div class="pagination">
+        <nav class="pagination-nav">
+            {% if page_obj.has_previous %}
+            <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" class="page-link prev">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+                Trước
+            </a>
+            {% endif %}
+
+            {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                <span class="page-link current">{{ num }}</span>
+                {% else %}
+                <a href="?q={{ query }}&page={{ num }}" class="page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" class="page-link next">
+                Sau
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick View Modal -->
+<div class="quick-view-modal" id="quickViewModal">
+    <div class="modal-content">
+        <button class="modal-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+        <div class="modal-body" id="quickViewContent">
+            <!-- Content will be loaded via AJAX -->
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --primary-light: #dbeafe;
+    --secondary: #8b5cf6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-hover: #f8fafc;
+    --bg-light: #f8fafc;
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --radius: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Search Header */
+.search-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.search-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.search-query {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-light);
+    border-radius: 50px;
+    margin-bottom: 1rem;
+}
+
+.query-label {
+    font-weight: 500;
+    color: var(--primary-dark);
+}
+
+.query-text {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.1em;
+}
+
+.search-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.stats-count {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 1.1em;
+}
+
+/* Filters & Sorting */
+.results-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filters-left {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-dropdown {
+    position: relative;
+}
+
+.filter-select,
+.sort-select {
+    padding: 0.75rem 1rem;
+    padding-right: 2.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: white;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 180px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    transition: var(--transition);
+}
+
+.filter-select:focus,
+.sort-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.sort-select {
+    min-width: 220px;
+}
+
+/* Did You Mean */
+.did-you-mean {
+    background: var(--warning-light);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.dym-label {
+    font-weight: 600;
+    color: #92400e;
+    margin-right: 1rem;
+}
+
+.dym-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.dym-suggestion {
+    padding: 0.5rem 1rem;
+    background: white;
+    color: var(--primary);
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.dym-suggestion:hover {
+    background: var(--primary-light);
+    transform: translateY(-1px);
+}
+
+/* Search Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+@media (max-width: 768px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Result Card */
+.result-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+}
+
+.result-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.result-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.course-icon {
+    font-size: 4rem;
+    opacity: 0.8;
+}
+
+.free-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--success);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.result-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    display: flex;
+    justify-content: space-between;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.result-card:hover .result-actions {
+    opacity: 1;
+}
+
+.btn-quick-view {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--text-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-quick-view:hover {
+    background: white;
+    transform: translateY(-1px);
+}
+
+.btn-wishlist {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-wishlist:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+.btn-wishlist.active {
+    background: white;
+}
+
+.btn-wishlist.active svg {
+    fill: #ef4444;
+    stroke: #ef4444;
+}
+
+.result-content {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.result-category {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.result-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stars {
+    color: #fbbf24;
+    font-size: 0.875rem;
+}
+
+.rating-score {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.rating-count {
+    color: var(--text-light);
+    font-size: 0.75rem;
+}
+
+.result-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.75rem;
+    line-height: 1.4;
+}
+
+.result-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.result-title a:hover {
+    color: var(--primary);
+}
+
+.result-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    flex: 1;
+}
+
+.result-highlight {
+    margin-bottom: 1rem;
+}
+
+.highlight-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--primary-light);
+    border-radius: var(--radius-sm);
+    color: var(--primary-dark);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.result-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.result-instructor {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.instructor-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.instructor-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.result-pricing {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.price-free {
+    font-weight: 700;
+    color: var(--success);
+    font-size: 1rem;
+}
+
+.price-original {
+    text-decoration: line-through;
+    color: var(--text-light);
+    font-size: 0.875rem;
+}
+
+.price-discount {
+    font-weight: 700;
+    color: var(--danger);
+    font-size: 1.125rem;
+}
+
+.discount-percent {
+    background: var(--danger);
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.price-normal {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+}
+
+.result-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: auto;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+/* No Results */
+.no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--bg-light);
+    border-radius: var(--radius);
+    border: 2px dashed var(--border);
+}
+
+.no-results-icon {
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.no-results h2 {
+    font-size: 1.75rem;
+    color: var(--text-primary);
+    margin: 0 0 1rem;
+}
+
+.no-results p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.suggestions {
+    text-align: left;
+    max-width: 400px;
+    margin: 0 auto 2rem;
+}
+
+.suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.suggestions li {
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.suggestions li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+}
+
+.no-results-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-browse-courses,
+.btn-clear-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.btn-browse-courses {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.btn-browse-courses:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-clear-search {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.btn-clear-search:hover {
+    background: var(--bg-hover);
+    border-color: var(--primary);
+}
+
+/* Related Searches */
+.related-searches {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.related-searches h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.related-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.related-tag {
+    padding: 0.5rem 1rem;
+    background: var(--bg-light);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.related-tag:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    transform: translateY(-1px);
+}
+
+/* Pagination */
+.pagination {
+    margin-top: 3rem;
+    display: flex;
+    justify-content: center;
+}
+
+.pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: var(--transition);
+    min-width: 40px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.page-link:hover:not(.current) {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.page-link.current {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    font-weight: 600;
+}
+
+/* Quick View Modal */
+.quick-view-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+}
+
+.quick-view-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: white;
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(-20px);
+    transition: var(--transition);
+}
+
+.quick-view-modal.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: var(--transition);
+    z-index: 2;
+}
+
+.modal-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --border: #334155;
+        --border-light: #1e293b;
+        --bg-card: #1e293b;
+        --bg-hover: #0f172a;
+        --bg-light: #0f172a;
+    }
+    
+    .results-filters {
+        background: #1e293b;
+    }
+    
+    .filter-select,
+    .sort-select {
+        background: #0f172a;
+        color: #f1f5f9;
+        border-color: #334155;
+    }
+    
+    .no-results {
+        background: #0f172a;
+    }
+    
+    .btn-clear-search {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    
+    .page-link {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    
+    .modal-content {
+        background: #1e293b;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize filters
+    const categoryFilter = document.getElementById('category-filter');
+    const priceFilter = document.getElementById('price-filter');
+    const levelFilter = document.getElementById('level-filter');
+    const sortSelect = document.getElementById('sort-by');
+    const resultCards = document.querySelectorAll('.result-card');
+    
+    // Filter courses based on selections
+    function filterCourses() {
+        const category = categoryFilter.value;
+        const price = priceFilter.value;
+        const level = levelFilter.value;
+        
+        resultCards.forEach(card => {
+            const cardCategory = card.dataset.category;
+            const cardPrice = parseInt(card.dataset.price);
+            const cardLevel = card.dataset.level;
+            
+            let show = true;
+            
+            // Category filter
+            if (category && cardCategory !== category) {
+                show = false;
+            }
+            
+            // Price filter
+            if (price && show) {
+                switch(price) {
+                    case 'free':
+                        show = cardPrice === 0;
+                        break;
+                    case 'under500k':
+                        show = cardPrice > 0 && cardPrice < 500000;
+                        break;
+                    case '500k-1m':
+                        show = cardPrice >= 500000 && cardPrice <= 1000000;
+                        break;
+                    case 'over1m':
+                        show = cardPrice > 1000000;
+                        break;
+                }
+            }
+            
+            // Level filter
+            if (level && cardLevel !== level) {
+                show = false;
+            }
+            
+            // Show/hide card with animation
+            if (show) {
+                card.style.display = 'flex';
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 10);
+            } else {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    card.style.display = 'none';
+                }, 300);
+            }
+        });
+    }
+    
+    // Add event listeners to filters
+    [categoryFilter, priceFilter, levelFilter].forEach(filter => {
+        filter.addEventListener('change', filterCourses);
+    });
+    
+    // Sort functionality
+    sortSelect.addEventListener('change', function() {
+        const sortBy = this.value;
+        const container = document.querySelector('.results-grid');
+        const visibleCards = Array.from(resultCards).filter(card => 
+            card.style.display !== 'none' && card.style.opacity !== '0'
+        );
+        
+        visibleCards.sort((a, b) => {
+            const aRating = parseFloat(a.querySelector('.rating-score').textContent);
+            const bRating = parseFloat(b.querySelector('.rating-score').textContent);
+            const aPrice = parseFloat(a.dataset.price);
+            const bPrice = parseFloat(b.dataset.price);
+            
+            switch(sortBy) {
+                case 'relevance':
+                    return 0; // Default order
+                case 'newest':
+                    return -1; // You would need to add date data
+                case 'rating':
+                    return bRating - aRating;
+                case 'price-low':
+                    return aPrice - bPrice;
+                case 'price-high':
+                    return bPrice - aPrice;
+                default:
+                    return 0;
+            }
+        });
+        
+        // Reorder cards
+        visibleCards.forEach(card => {
+            container.appendChild(card);
+        });
+    });
+    
+    // Wishlist functionality
+    document.querySelectorAll('.btn-wishlist').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const courseId = this.dataset.courseId;
+            const isActive = this.classList.contains('active');
+            
+            // Toggle active state
+            this.classList.toggle('active');
+            
+            // Update icon
+            const svg = this.querySelector('svg');
+            if (this.classList.contains('active')) {
+                svg.style.fill = '#ef4444';
+                svg.style.stroke = '#ef4444';
+                showNotification('Đã thêm vào danh sách yêu thích', 'success');
+            } else {
+                svg.style.fill = 'none';
+                svg.style.stroke = 'currentColor';
+                showNotification('Đã xóa khỏi danh sách yêu thích', 'info');
+            }
+            
+            // Send AJAX request to update wishlist
+            updateWishlist(courseId, !isActive);
+        });
+    });
+    
+    // Quick view functionality
+    const quickViewModal = document.getElementById('quickViewModal');
+    const quickViewContent = document.getElementById('quickViewContent');
+    
+    document.querySelectorAll('.btn-quick-view').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const courseId = this.dataset.courseId;
+            openQuickView(courseId);
+        });
+    });
+    
+    // Close modal
+    quickViewModal.querySelector('.modal-close').addEventListener('click', closeQuickView);
+    quickViewModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeQuickView();
+        }
+    });
+    
+    // Escape key to close modal
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && quickViewModal.classList.contains('active')) {
+            closeQuickView();
+        }
+    });
+    
+    function openQuickView(courseId) {
+        // Show loading state
+        quickViewContent.innerHTML = `
+            <div class="quick-view-loading">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+                <p>Đang tải thông tin khóa học...</p>
+            </div>
+        `;
+        
+        quickViewModal.classList.add('active');
+        
+        // Load course data via AJAX
+        setTimeout(() => {
+            // Simulate API call - replace with actual AJAX request
+            quickViewContent.innerHTML = `
+                <div class="quick-view-content">
+                    <div class="quick-view-header">
+                        <h2>Python Programming for Beginners</h2>
+                        <div class="quick-view-rating">
+                            <span class="stars">★★★★★</span>
+                            <span>4.8 (120 đánh giá)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="quick-view-body">
+                        <p>Khóa học lập trình Python từ cơ bản đến nâng cao...</p>
+                        
+                        <div class="quick-view-features">
+                            <h3>Bạn sẽ học được:</h3>
+                            <ul>
+                                <li>Lập trình Python cơ bản</li>
+                                <li>Xử lý dữ liệu với Pandas</li>
+                                <li>Phát triển web với Django</li>
+                                <li>Machine Learning cơ bản</li>
+                            </ul>
+                        </div>
+                        
+                        <a href="/course/${courseId}/" class="btn-enroll-now">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            Đăng ký ngay
+                        </a>
+                    </div>
+                </div>
+            `;
+        }, 1000);
+    }
+    
+    function closeQuickView() {
+        quickViewModal.classList.remove('active');
+        quickViewContent.innerHTML = '';
+    }
+    
+    function updateWishlist(courseId, add) {
+        // Send AJAX request to update wishlist
+        fetch(`/api/wishlist/${courseId}/`, {
+            method: add ? 'POST' : 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                // Revert if failed
+                const btn = document.querySelector(`.btn-wishlist[data-course-id="${courseId}"]`);
+                btn.classList.toggle('active');
+                const svg = btn.querySelector('svg');
+                svg.style.fill = svg.style.fill === 'none' ? '#ef4444' : 'none';
+                svg.style.stroke = svg.style.stroke === 'currentColor' ? '#ef4444' : 'currentColor';
+                
+                showNotification('Có lỗi xảy ra, vui lòng thử lại!', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Có lỗi xảy ra, vui lòng thử lại!', 'error');
+        });
+    }
+    
+    // Highlight search query in results
+    function highlightText(element, query) {
+        if (!query) return;
+        
+        const text = element.textContent;
+        const regex = new RegExp(`(${query})`, 'gi');
+        const highlighted = text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        
+        if (highlighted !== text) {
+            element.innerHTML = highlighted;
+        }
+    }
+    
+    // Apply highlighting
+    const query = '{{ query }}';
+    if (query.length > 2) {
+        document.querySelectorAll('.result-title, .result-description').forEach(element => {
+            highlightText(element, query);
+        });
+    }
+    
+    // Add CSS for highlighted text
+    const style = document.createElement('style');
+    style.textContent = `
+        .search-highlight {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+        
+        .quick-view-loading {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .quick-view-loading svg {
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Show notification
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        Object.assign(notification.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '1rem 1.5rem',
+            background: type === 'success' ? '#10b981' : 
+                      type === 'error' ? '#ef4444' : '#3b82f6',
+            color: 'white',
+            borderRadius: 'var(--radius-sm)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: '10000',
+            animation: 'slideIn 0.3s ease'
+        });
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    
+    // Add notification animations
+    const notificationStyle = document.createElement('style');
+    notificationStyle.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(notificationStyle);
+});
+</script>
+{% endblock %}

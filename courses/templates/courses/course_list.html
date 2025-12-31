@@ -1,0 +1,1116 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<!-- Courses Page -->
+<div class="courses-page">
+    <!-- Hero Section -->
+    <div class="courses-hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">📚 Khám phá khóa học</h1>
+                <p class="hero-description">
+                    Học lập trình từ cơ bản đến nâng cao với các khóa học chất lượng cao
+                </p>
+                
+                <!-- Search Bar -->
+                <form method="GET" action="{% url 'course_list' %}" class="search-form">
+                    <div class="search-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" name="q" value="{{ query|default:'' }}" 
+                               placeholder="Tìm kiếm khóa học..." 
+                               class="search-input">
+                        <button type="submit" class="search-button">
+                            <span>Tìm kiếm</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Category Filter -->
+        <div class="category-filter">
+            <div class="filter-header">
+                <h3>📁 Lọc theo danh mục</h3>
+            </div>
+            <div class="filter-tags">
+                <a href="{% url 'course_list' %}" 
+                   class="filter-tag {% if not selected_category %}active{% endif %}">
+                    Tất cả
+                </a>
+                {% for value, label in course_categories %}
+                <a href="{% url 'course_list' %}?category={{ value }}" 
+                   class="filter-tag {% if selected_category == value %}active{% endif %}">
+                    {{ label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Results Header -->
+        <div class="results-header">
+            <div class="results-info">
+                <h2>
+                    {% if selected_category %}
+                        {% for value, label in course_categories %}
+                            {% if value == selected_category %}{{ label }}{% endif %}
+                        {% endfor %}
+                    {% elif query %}
+                        Kết quả tìm kiếm cho "{{ query }}"
+                    {% else %}
+                        Tất cả khóa học
+                    {% endif %}
+                </h2>
+                <p class="results-count">{{ courses|length }} khóa học</p>
+            </div>
+            
+            <div class="sort-options">
+                <select class="sort-select" onchange="window.location.href=this.value">
+                    <option value="{% url 'course_list' %}?sort=popular">Phổ biến nhất</option>
+                    <option value="{% url 'course_list' %}?sort=newest">Mới nhất</option>
+                    <option value="{% url 'course_list' %}?sort=price_asc">Giá thấp đến cao</option>
+                    <option value="{% url 'course_list' %}?sort=price_desc">Giá cao đến thấp</option>
+                    <option value="{% url 'course_list' %}?sort=rating">Đánh giá cao nhất</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Courses Grid -->
+        <div class="courses-grid">
+            {% for course in courses %}
+            <div class="course-card">
+                <!-- Course Badge -->
+                <div class="course-badge">
+                    <span class="badge-category">{{ course.get_category_display }}</span>
+                    {% if course.is_new %}
+                    <span class="badge-new">MỚI</span>
+                    {% endif %}
+                    {% if course.is_featured %}
+                    <span class="badge-featured">NỔI BẬT</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Course Content -->
+                <div class="course-content">
+                    <h3 class="course-title">
+                        <a href="{% url 'course_detail' course.id %}">{{ course.title }}</a>
+                    </h3>
+                    
+                    <p class="course-description">
+                        {{ course.description|truncatewords:15 }}
+                    </p>
+                    
+                    <!-- Course Meta -->
+                    <div class="course-meta">
+                        <div class="meta-item">
+                            <span class="meta-icon">👨‍🏫</span>
+                            <span>{{ course.instructor|default:"Giảng viên chuyên gia" }}</span>
+                        </div>
+                        
+                        <div class="meta-details">
+                            <div class="detail-item">
+                                <span class="detail-icon">⏱️</span>
+                                <span>{{ course.duration|default:"8" }} giờ</span>
+                            </div>
+                            <div class="detail-divider">×</div>
+                            <div class="detail-item">
+                                <span class="detail-icon">👨‍🎓</span>
+                                <span>{{ course.enrollment_count|default:"0" }} học viên</span>
+                            </div>
+                        </div>
+                        
+                        <div class="meta-rating">
+                            <span class="rating-icon">⭐</span>
+                            <span>{{ course.average_rating|default:"5.0" }}/5.0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Course Footer -->
+                <div class="course-footer">
+                    <div class="course-price-section">
+                        <div class="course-price">
+                            <span class="price-current">{{ course.price|floatformat:0 }}</span>
+                            <span class="price-unit">VNĐ</span>
+                        </div>
+                        
+                        <div class="course-actions">
+                            <!-- Nút Thêm giỏ hàng -->
+                            <form action="{% if user.is_authenticated %}{% url 'add_to_cart' course.id %}{% else %}{% url 'login' %}{% endif %}" method="post" class="action-form">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-cart">
+                                    <span class="btn-icon">🛒</span>
+                                    <span class="btn-text">Thêm vào giỏ hàng</span>
+                                </button>
+                            </form>
+                            
+                            <!-- Nút Mua ngay -->
+                            <a href="{% if user.is_authenticated %}{% url 'checkout_direct' course.id %}{% else %}{% url 'login' %}?next={% url 'checkout_direct' course.id %}{% endif %}" class="btn-buy">
+                                <span class="btn-icon">⚡</span>
+                                <span class="btn-text">Mua ngay!!!</span>
+                            </a>
+                            
+                            <!-- Nút Tiếp tục học (chỉ hiển thị nếu đã đăng ký) -->
+                            {% if user.is_authenticated and user in course.enrolled_users.all %}
+                            <a href="{% url 'learning_path' course.id %}" class="btn-enrolled">
+                                <span class="btn-icon">▶️</span>
+                                <span class="btn-text">Tiếp tục học</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Nút Xem chi tiết -->
+                        <a href="{% url 'course_detail' course.id %}" class="btn-details">
+                            <span class="btn-icon">👁️</span>
+                            <span class="btn-text">Xem chi tiết</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <!-- No Courses Found -->
+            <div class="no-courses">
+                <div class="no-courses-icon">🔍</div>
+                <h3>Không tìm thấy khóa học nào</h3>
+                <p>
+                    {% if query %}
+                    Không có kết quả cho "{{ query }}". Hãy thử tìm kiếm với từ khóa khác.
+                    {% elif selected_category %}
+                    Chưa có khóa học nào trong danh mục này.
+                    {% else %}
+                    Hiện chưa có khóa học nào.
+                    {% endif %}
+                </p>
+                <div class="no-courses-actions">
+                    <a href="{% url 'course_list' %}" class="btn-primary">Xem tất cả khóa học</a>
+                    {% if query %}
+                    <a href="{% url 'course_list' %}" class="btn-secondary">Xóa tìm kiếm</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if courses.has_other_pages %}
+        <div class="pagination">
+            {% if courses.has_previous %}
+            <a href="?page={{ courses.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
+               class="page-link prev">
+                <span>←</span>
+                <span>Trước</span>
+            </a>
+            {% endif %}
+            
+            <div class="page-numbers">
+                {% for i in courses.paginator.page_range %}
+                    {% if courses.number == i %}
+                    <span class="page-number active">{{ i }}</span>
+                    {% elif i > courses.number|add:'-3' and i < courses.number|add:'3' %}
+                    <a href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
+                       class="page-number">{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            {% if courses.has_next %}
+            <a href="?page={{ courses.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" 
+               class="page-link next">
+                <span>Sau</span>
+                <span>→</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+:root {
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light: #f8fafc;
+    --border: #e2e8f0;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    color: var(--text);
+    line-height: 1.6;
+    background: var(--light);
+}
+
+/* Courses Page */
+.courses-page {
+    background: var(--light);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Hero Section */
+.courses-hero {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    padding: 60px 0;
+    margin-bottom: 40px;
+}
+
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.hero-description {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Search Form */
+.search-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    background: white;
+    border-radius: 50px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 1.2rem;
+    z-index: 2;
+}
+
+.search-input {
+    flex: 1;
+    padding: 18px 20px 18px 50px;
+    border: none;
+    font-size: 1rem;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+}
+
+.search-button {
+    background: linear-gradient(135deg, var(--success), #34d399);
+    color: white;
+    border: none;
+    padding: 18px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.search-button:hover {
+    background: linear-gradient(135deg, #0da271, #10b981);
+    transform: translateY(-1px);
+}
+
+/* Category Filter */
+.category-filter {
+    background: white;
+    border-radius: var(--radius);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    margin-bottom: 30px;
+}
+
+.filter-header {
+    margin-bottom: 20px;
+}
+
+.filter-header h3 {
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2rem;
+}
+
+.filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-tag {
+    padding: 10px 20px;
+    background: var(--light);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 500;
+    transition: var(--transition);
+    border: 2px solid transparent;
+}
+
+.filter-tag:hover {
+    background: white;
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.filter-tag.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* Results Header */
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.results-info h2 {
+    color: var(--text);
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+}
+
+.results-count {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.sort-options {
+    position: relative;
+}
+
+.sort-select {
+    padding: 12px 40px 12px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    background: white;
+    appearance: none;
+    cursor: pointer;
+    transition: var(--transition);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+    font-family: inherit;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sort-select:hover {
+    border-color: var(--accent);
+}
+
+/* Courses Grid */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 50px;
+}
+
+/* Course Card */
+.course-card {
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 460px;
+    position: relative;
+    border: 1px solid var(--border);
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent);
+}
+
+/* Course Badge */
+.course-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 2;
+}
+
+.badge-category, .badge-new, .badge-featured {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(10px);
+}
+
+.badge-category {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.badge-new {
+    background: linear-gradient(135deg, var(--success), #34d399);
+}
+
+.badge-featured {
+    background: linear-gradient(135deg, var(--warning), #fbbf24);
+}
+
+/* Course Content */
+.course-content {
+    padding: 60px 20px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-bottom: 1px solid var(--border);
+}
+
+.course-title {
+    margin-bottom: 12px;
+    min-height: 48px;
+}
+
+.course-title a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.3;
+    transition: var(--transition);
+    display: block;
+}
+
+.course-title a:hover {
+    color: var(--accent);
+}
+
+.course-description {
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex: 1;
+    font-size: 0.95rem;
+    min-height: 45px;
+}
+
+/* Course Meta */
+.course-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.meta-details {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    flex-wrap: wrap;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.detail-divider {
+    color: var(--muted);
+    opacity: 0.5;
+    font-weight: 300;
+}
+
+.meta-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--warning);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.meta-icon, .detail-icon, .rating-icon {
+    font-size: 1rem;
+}
+
+/* Course Footer */
+.course-footer {
+    padding: 20px;
+    background: white;
+}
+
+.course-price-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.course-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    justify-content: center;
+}
+
+.price-current {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+}
+
+.price-unit {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* Course Actions - FIXED */
+.course-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.action-form, .btn-enrolled, .btn-cart, .btn-buy {
+    flex: 1;
+    min-width: calc(50% - 4px); /* Chia đều thành 2 cột */
+}
+
+.btn-enrolled, .btn-cart, .btn-buy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    font-family: inherit;
+    height: 40px;
+    text-align: center;
+}
+
+.btn-enrolled {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+}
+
+.btn-enrolled:hover {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+}
+
+.btn-cart {
+    background: var(--light);
+    color: var(--accent);
+    border: 2px solid var(--accent);
+}
+
+.btn-cart:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+}
+
+.btn-buy {
+    background: linear-gradient(135deg, var(--success), #34d399);
+    color: white;
+}
+
+.btn-buy:hover {
+    background: linear-gradient(135deg, #0da271, #10b981);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.2);
+}
+
+/* Xem chi tiết button */
+.btn-details {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: transparent;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    transition: var(--transition);
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.btn-details:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* No Courses */
+.no-courses {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 40px;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.no-courses-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.no-courses h3 {
+    color: var(--text);
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.no-courses p {
+    color: var(--muted);
+    max-width: 500px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+}
+
+.no-courses-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+    font-family: inherit;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+}
+
+.btn-secondary:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 50px 0;
+    flex-wrap: wrap;
+}
+
+.page-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: white;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: var(--transition);
+    border: 2px solid var(--border);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.page-link:hover:not(.disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.page-numbers {
+    display: flex;
+    gap: 5px;
+}
+
+.page-number {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: var(--transition);
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+.page-number:not(.active):hover {
+    background: var(--light);
+    color: var(--accent);
+}
+
+.page-number.active {
+    background: var(--accent);
+    color: white;
+    cursor: default;
+}
+
+/* Responsive Fixes */
+@media (max-width: 1024px) {
+    .courses-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .courses-hero {
+        padding: 40px 0;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .search-wrapper {
+        flex-direction: column;
+        border-radius: var(--radius);
+    }
+    
+    .search-input {
+        padding: 15px 20px 15px 50px;
+    }
+    
+    .search-button {
+        padding: 15px;
+        border-radius: 0 0 var(--radius) var(--radius);
+        width: 100%;
+    }
+    
+    .course-card {
+        min-height: 440px;
+    }
+    
+    .btn-enrolled, .btn-cart, .btn-buy {
+        font-size: 0.8rem;
+        padding: 10px 6px;
+    }
+    
+    .btn-text {
+        font-size: 0.8rem;
+    }
+    
+    .no-courses-actions {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-tags {
+        justify-content: center;
+    }
+    
+    .course-card {
+        min-height: 420px;
+    }
+    
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    
+    .container {
+        padding: 0 15px;
+    }
+    
+    .course-content {
+        padding: 60px 15px 15px;
+    }
+    
+    .course-footer {
+        padding: 15px;
+    }
+    
+    .price-current {
+        font-size: 1.6rem;
+    }
+    
+    /* Trên mobile nhỏ, chỉ hiển thị icon */
+    @media (max-width: 380px) {
+        .btn-enrolled .btn-text,
+        .btn-cart .btn-text,
+        .btn-buy .btn-text {
+            display: none;
+        }
+        
+        .btn-enrolled, .btn-cart, .btn-buy {
+            gap: 0;
+            padding: 10px;
+        }
+        
+        .btn-icon {
+            font-size: 1.2rem;
+        }
+        
+        .btn-details .btn-text {
+            font-size: 0.85rem;
+        }
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update sort select value based on current URL
+    const sortSelect = document.querySelector('.sort-select');
+    if (sortSelect) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSort = urlParams.get('sort') || 'popular';
+        
+        // Update options URLs with current filters
+        const baseUrl = window.location.origin + window.location.pathname;
+        sortSelect.querySelectorAll('option').forEach(option => {
+            const value = option.value.split('sort=')[1] || 'popular';
+            const url = new URL(baseUrl);
+            
+            // Add all existing parameters
+            urlParams.forEach((value, key) => {
+                if (key !== 'sort') {
+                    url.searchParams.set(key, value);
+                }
+            });
+            
+            // Add sort parameter
+            url.searchParams.set('sort', value);
+            
+            option.value = url.toString();
+        });
+        
+        // Set current value
+        sortSelect.value = currentSort;
+    }
+    
+    // Add to cart animation
+    document.querySelectorAll('.btn-cart').forEach(button => {
+        button.addEventListener('click', function(e) {
+            // In a real app, you would make an AJAX request here
+            // For demo, just show a notification
+            
+            // Create notification
+            const notification = document.createElement('div');
+            notification.className = 'cart-notification';
+            notification.innerHTML = `
+                <span>✅</span>
+                <span>Đã thêm vào giỏ hàng</span>
+            `;
+            
+            // Add styles
+            const style = document.createElement('style');
+            style.textContent = `
+                .cart-notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: white;
+                    padding: 15px 20px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-weight: 600;
+                    color: var(--success);
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease-out;
+                    border: 2px solid #10b981;
+                }
+                
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            
+            document.head.appendChild(style);
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        });
+    });
+    
+    // Search form focus
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.addEventListener('focus', function() {
+            this.parentElement.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.3)';
+        });
+        
+        searchInput.addEventListener('blur', function() {
+            this.parentElement.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.2)';
+        });
+    }
+    
+    // Course card hover effects enhancement
+    const courseCards = document.querySelectorAll('.course-card');
+    courseCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.zIndex = '10';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.zIndex = '';
+        });
+    });
+});
+</script>
+{% endblock %}

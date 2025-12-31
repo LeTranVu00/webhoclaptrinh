@@ -1,0 +1,2059 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<div class="forum-detail-page">
+    <!-- Navigation -->
+    <div class="detail-navigation">
+        <div class="container">
+            <div class="nav-content">
+                <a href="{% url 'forum_list' %}" class="nav-back">
+                    <span class="nav-icon">←</span>
+                    <span class="nav-text">Quay lại diễn đàn</span>
+                </a>
+                
+                <div class="nav-actions">
+                    {% if user == post.author or user.is_staff %}
+                    <div class="dropdown">
+                        <button class="dropdown-toggle">
+                            <span>⚙️</span>
+                            <span>Tuỳ chọn</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            {% if user.is_staff %}
+                            <form method="post" action="{% url 'admin:forum_toggle_pin' post.id %}" class="dropdown-form">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">
+                                    {% if post.is_pinned %}📌 Bỏ ghim{% else %}📌 Ghim bài{% endif %}
+                                </button>
+                            </form>
+                            {% if post.is_featured %}
+                            <form method="post" action="{% url 'admin:forum_toggle_feature' post.id %}" class="dropdown-form">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">
+                                    ⭐ Bỏ nổi bật
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'admin:forum_toggle_feature' post.id %}" class="dropdown-form">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">
+                                    ⭐ Đánh dấu nổi bật
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% endif %}
+                            <a href="{% url 'forum_edit' post.id %}" class="dropdown-item">✏️ Chỉnh sửa bài viết</a>
+                            {% if user.is_staff %}
+                            <button class="dropdown-item delete-post">🗑️ Xoá bài viết</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <button class="nav-action" onclick="scrollToComments()">
+                        <span>💬</span>
+                        <span>Bình luận</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="detail-wrapper">
+            <!-- Left: Main Post -->
+            <div class="detail-main">
+                <!-- Post Badges -->
+                <div class="post-badges">
+                    {% if post.is_pinned %}
+                    <span class="badge pinned">📌 Bài viết được ghim</span>
+                    {% endif %}
+                    {% if post.is_featured %}
+                    <span class="badge featured">⭐ Bài viết nổi bật</span>
+                    {% endif %}
+                    {% if post.is_solved %}
+                    <span class="badge solved">✅ Đã giải đáp</span>
+                    {% endif %}
+                    <span class="badge category">{{ post.get_category_display }}</span>
+                </div>
+
+                <!-- Main Post -->
+                <article class="main-post">
+                    <header class="post-header">
+                        <div class="author-section">
+                            <div class="author-avatar">
+                                {{ post.author.username|slice:":1"|upper }}
+                            </div>
+                            <div class="author-info">
+                                <div class="author-main">
+                                    <strong class="author-name">{{ post.author.username }}</strong>
+                                    {% if post.author.is_staff %}
+                                    <span class="author-badge staff">👑 Admin</span>
+                                    {% endif %}
+                                    {% if post.author.is_expert %}
+                                    <span class="author-badge expert">🧠 Chuyên gia</span>
+                                    {% endif %}
+                                </div>
+                                <div class="post-meta">
+                                    <span class="post-time">{{ post.created_at|date:"H:i • d/m/Y" }}</span>
+                                    {% if post.updated_at != post.created_at %}
+                                    <span class="post-edited">(đã chỉnh sửa {{ post.updated_at|timesince }} trước)</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="post-stats">
+                            <div class="stat-item">
+                                <span class="stat-icon">👁️</span>
+                                <span class="stat-value">{{ post.views|default:"1.2k" }}</span>
+                                <span class="stat-label">lượt xem</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">💬</span>
+                                <span class="stat-value">{{ comments|length }}</span>
+                                <span class="stat-label">bình luận</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">⏱️</span>
+                                <span class="stat-value">{{ post.reading_time|default:"5" }} phút</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <h1 class="post-title">{{ post.title }}</h1>
+
+                    <div class="post-content" id="postContent">
+                        {{ post.content|linebreaksbr|urlize }}
+                    </div>
+
+                    {% if post.tags %}
+                    <div class="post-tags">
+                        {% for tag in post.tags.split %}
+                        <a href="{% url 'forum_tag' tag %}" class="post-tag">#{{ tag }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <footer class="post-footer">
+                        <div class="reaction-section">
+                            <form method="post" action="{% url 'toggle_like' post.id %}" class="reaction-form like-form">
+                                {% csrf_token %}
+                                <button type="button" class="reaction-btn like-btn {% if user_has_liked %}active{% endif %}">
+                                    <span class="reaction-icon">❤️</span>
+                                    <span class="reaction-count">{{ like_count }}</span>
+                                    <span class="reaction-label">Thích</span>
+                                </button>
+                            </form>
+                            
+                            <button class="reaction-btn" onclick="toggleReactions()">
+                                <span class="reaction-icon">👍</span>
+                                <span class="reaction-count">42</span>
+                            </button>
+                            
+                            <div class="reactions-panel" id="reactionsPanel">
+                                <button class="reaction-option" data-reaction="like">👍</button>
+                                <button class="reaction-option" data-reaction="love">❤️</button>
+                                <button class="reaction-option" data-reaction="laugh">😄</button>
+                                <button class="reaction-option" data-reaction="wow">😲</button>
+                                <button class="reaction-option" data-reaction="sad">😢</button>
+                                <button class="reaction-option" data-reaction="angry">😠</button>
+                            </div>
+                        </div>
+
+                        <div class="action-section">
+                            <button class="action-btn" onclick="sharePost()">
+                                <span class="action-icon">📤</span>
+                                <span class="action-text">Chia sẻ</span>
+                            </button>
+                            
+                            <button class="action-btn bookmark-btn {% if user_has_saved %}active{% endif %}" 
+                                    onclick="toggleBookmark()">
+                                <span class="action-icon">🔖</span>
+                                <span class="action-text">Lưu</span>
+                            </button>
+                            
+                            <button class="action-btn" onclick="scrollToComments()">
+                                <span class="action-icon">💬</span>
+                                <span class="action-text">Bình luận</span>
+                            </button>
+                            
+                            <button class="action-btn report-btn" onclick="reportPost()">
+                                <span class="action-icon">🚨</span>
+                                <span class="action-text">Báo cáo</span>
+                            </button>
+                        </div>
+                    </footer>
+
+                    <!-- Post Navigation -->
+                    <div class="post-navigation">
+                        {% if previous_post %}
+                        <a href="{% url 'forum_detail' previous_post.id %}" class="nav-post prev">
+                            <span class="nav-direction">← Bài trước</span>
+                            <span class="nav-title">{{ previous_post.title|truncatechars:50 }}</span>
+                        </a>
+                        {% endif %}
+                        
+                        {% if next_post %}
+                        <a href="{% url 'forum_detail' next_post.id %}" class="nav-post next">
+                            <span class="nav-direction">Bài sau →</span>
+                            <span class="nav-title">{{ next_post.title|truncatechars:50 }}</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </article>
+
+                <!-- Comments Section -->
+                <section class="comments-section" id="commentsSection">
+                    <div class="section-header">
+                        <h2>
+                            <span class="section-icon">💬</span>
+                            <span class="section-title">Bình luận</span>
+                            <span class="comment-count">({{ comments|length }})</span>
+                        </h2>
+                        <div class="section-actions">
+                            <button class="sort-btn" onclick="toggleSort()">
+                                <span>Sắp xếp: </span>
+                                <span id="sortText">Mới nhất</span>
+                                <span>▼</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comment Form -->
+                    {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'add_comment' post.id %}" class="comment-form" id="commentForm">
+                        {% csrf_token %}
+                        <div class="comment-editor">
+                            <div class="editor-header">
+                                <div class="editor-tools">
+                                    <button type="button" class="tool-btn" data-tag="bold"><b>B</b></button>
+                                    <button type="button" class="tool-btn" data-tag="italic"><i>I</i></button>
+                                    <button type="button" class="tool-btn" data-tag="code">{"{}"}</button>
+                                    <button type="button" class="tool-btn" data-tag="link">🔗</button>
+                                </div>
+                            </div>
+                            <textarea name="content" placeholder="Viết bình luận của bạn..." 
+                                      required rows="3" class="comment-input"></textarea>
+                            <div class="editor-footer">
+                                <small>Nhấn Ctrl+Enter để gửi nhanh</small>
+                                <button type="submit" class="btn-submit">
+                                    <span>📤</span>
+                                    <span>Gửi bình luận</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="auth-prompt">
+                        <div class="prompt-icon">🔒</div>
+                        <div class="prompt-content">
+                            <h3>Đăng nhập để bình luận</h3>
+                            <p>Tham gia thảo luận cùng cộng đồng lập trình viên</p>
+                            <div class="prompt-actions">
+                                <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn-login">🔓 Đăng nhập</a>
+                                <a href="{% url 'account_signup' %}" class="btn-signup">📝 Đăng ký</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments List -->
+                    <div class="comments-list" id="commentsList">
+                        {% for comment in comments %}
+                        <div class="comment-card {% if comment.author == post.author %}author-comment{% endif %}" 
+                             data-comment-id="{{ comment.id }}">
+                            <div class="comment-header">
+                                <div class="comment-author">
+                                    <div class="comment-avatar">
+                                        {{ comment.author.username|slice:":1"|upper }}
+                                    </div>
+                                    <div class="comment-info">
+                                        <strong class="comment-name">{{ comment.author.username }}</strong>
+                                        {% if comment.author == post.author %}
+                                        <span class="comment-badge author">👑 Tác giả</span>
+                                        {% endif %}
+                                        <span class="comment-time">{{ comment.created_at|timesince }} trước</span>
+                                    </div>
+                                </div>
+                                
+                                {% if user == comment.author or user.is_staff %}
+                                <div class="comment-actions">
+                                    <button class="action-btn edit-comment" title="Chỉnh sửa">✏️</button>
+                                    <button class="action-btn delete-comment" title="Xoá">🗑️</button>
+                                    {% if user.is_staff %}
+                                    <button class="action-btn report-comment" title="Báo cáo">🚨</button>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="comment-content">
+                                {{ comment.content|linebreaksbr }}
+                            </div>
+                            
+                            <div class="comment-footer">
+                                <button class="reply-btn" onclick="replyToComment({{ comment.id }}, '{{ comment.author.username }}')">
+                                    <span>↩️</span>
+                                    <span>Trả lời</span>
+                                </button>
+                                
+                                <button class="like-comment {% if comment.user_has_liked %}active{% endif %}">
+                                    <span>👍</span>
+                                    <span>{{ comment.like_count|default:"0" }}</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Reply Form (hidden by default) -->
+                            <div class="reply-form" style="display: none;" id="replyForm{{ comment.id }}">
+                                <textarea placeholder="Trả lời {{ comment.author.username }}..." rows="2"></textarea>
+                                <div class="reply-actions">
+                                    <button class="btn-cancel" onclick="cancelReply({{ comment.id }})">Hủy</button>
+                                    <button class="btn-send" onclick="sendReply({{ comment.id }})">Gửi</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="no-comments">
+                            <div class="no-comments-icon">💬</div>
+                            <h3>Chưa có bình luận nào</h3>
+                            <p>Hãy là người đầu tiên bình luận cho bài viết này!</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Load More -->
+                    {% if comments.has_next %}
+                    <div class="load-more">
+                        <button class="btn-load-more" onclick="loadMoreComments()">
+                            <span>⬇️</span>
+                            <span>Tải thêm bình luận</span>
+                        </button>
+                    </div>
+                    {% endif %}
+                </section>
+            </div>
+
+            <!-- Right: Sidebar -->
+            <div class="detail-sidebar">
+                <!-- Author Info -->
+                <div class="sidebar-section author-widget">
+                    <h3 class="section-title">👤 Tác giả</h3>
+                    <div class="author-profile">
+                        <div class="profile-avatar large">
+                            {{ post.author.username|slice:":1"|upper }}
+                        </div>
+                        <div class="profile-info">
+                            <h4 class="profile-name">{{ post.author.username }}</h4>
+                            <div class="profile-stats">
+                                <div class="profile-stat">
+                                    <span class="stat-number">{{ author_posts_count|default:"0" }}</span>
+                                    <span class="stat-label">bài viết</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="stat-number">{{ author_comments_count|default:"0" }}</span>
+                                    <span class="stat-label">bình luận</span>
+                                </div>
+                            </div>
+                            <a href="{% url 'user_profile' post.author.username %}" class="btn-profile">
+                                👁️ Xem trang cá nhân
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related Posts -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">📚 Bài viết liên quan</h3>
+                    <div class="related-posts">
+                        {% for related in related_posts %}
+                        <a href="{% url 'forum_detail' related.id %}" class="related-post">
+                            <h4 class="related-title">{{ related.title|truncatechars:60 }}</h4>
+                            <div class="related-meta">
+                                <span class="related-comments">💬 {{ related.comment_count }}</span>
+                                <span class="related-time">{{ related.created_at|timesince }} trước</span>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="no-related">
+                            <p>Chưa có bài viết liên quan</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Popular Tags -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">🏷️ Thẻ phổ biến</h3>
+                    <div class="popular-tags">
+                        <a href="{% url 'forum_tag' 'python' %}" class="popular-tag">python</a>
+                        <a href="{% url 'forum_tag' 'django' %}" class="popular-tag">django</a>
+                        <a href="{% url 'forum_tag' 'javascript' %}" class="popular-tag">javascript</a>
+                        <a href="{% url 'forum_tag' 'web-development' %}" class="popular-tag">web-development</a>
+                        <a href="{% url 'forum_tag' 'react' %}" class="popular-tag">react</a>
+                        <a href="{% url 'forum_tag' 'database' %}" class="popular-tag">database</a>
+                    </div>
+                </div>
+
+                <!-- Community Stats -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">📊 Thống kê cộng đồng</h3>
+                    <div class="community-stats">
+                        <div class="community-stat">
+                            <span class="stat-icon">📝</span>
+                            <div class="stat-info">
+                                <span class="stat-number">{{ total_posts|default:"1.2k" }}</span>
+                                <span class="stat-label">bài viết</span>
+                            </div>
+                        </div>
+                        <div class="community-stat">
+                            <span class="stat-icon">💬</span>
+                            <div class="stat-info">
+                                <span class="stat-number">{{ total_comments|default:"5.8k" }}</span>
+                                <span class="stat-label">bình luận</span>
+                            </div>
+                        </div>
+                        <div class="community-stat">
+                            <span class="stat-icon">👥</span>
+                            <div class="stat-info">
+                                <span class="stat-number">{{ total_users|default:"850" }}</span>
+                                <span class="stat-label">thành viên</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">⚡ Hành động nhanh</h3>
+                    <div class="quick-actions">
+                        <button class="quick-action" onclick="scrollToComments()">
+                            <span class="action-icon">💬</span>
+                            <span class="action-text">Viết bình luận</span>
+                        </button>
+                        <button class="quick-action" onclick="sharePost()">
+                            <span class="action-icon">📤</span>
+                            <span class="action-text">Chia sẻ bài viết</span>
+                        </button>
+                        <a href="{% url 'forum_create' %}" class="quick-action">
+                            <span class="action-icon">📝</span>
+                            <span class="action-text">Viết bài mới</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Delete Confirmation -->
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <h3>🗑️ Xác nhận xoá</h3>
+        <p>Bạn có chắc chắn muốn xoá bài viết này? Hành động này không thể hoàn tác.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Hủy</button>
+            <form method="post" action="{% url 'forum_delete' post.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-delete">Xoá bài viết</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --accent: #3b82f6;
+    --accent-2: #6366f1;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --text: #1e293b;
+    --muted: #64748b;
+    --light: #f8fafc;
+    --border: #e2e8f0;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --transition: all 0.3s ease;
+}
+
+/* Forum Detail Page */
+.forum-detail-page {
+    background: var(--light);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Navigation */
+.detail-navigation {
+    background: white;
+    border-bottom: 2px solid var(--border);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-back {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.nav-back:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateX(-5px);
+}
+
+.nav-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.nav-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.nav-action:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+/* Dropdown */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.dropdown-toggle:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    min-width: 200px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
+    z-index: 1000;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-form {
+    display: block;
+    width: 100%;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    text-align: left;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.dropdown-item:hover {
+    background: var(--light);
+    color: var(--accent);
+}
+
+/* Detail Wrapper */
+.detail-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 30px;
+    margin: 30px 0;
+}
+
+/* Post Badges */
+.post-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge.pinned {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+}
+
+.badge.featured {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+}
+
+.badge.solved {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.badge.category {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Main Post */
+.main-post {
+    background: white;
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 30px;
+}
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.author-section {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.author-avatar {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.author-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.author-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.author-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.author-badge.staff {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.author-badge.expert {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+}
+
+.post-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.post-edited {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.post-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.stat-icon {
+    font-size: 1.1rem;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.post-title {
+    color: var(--text);
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 25px;
+}
+
+.post-content {
+    color: var(--text);
+    line-height: 1.8;
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+}
+
+.post-content p {
+    margin-bottom: 1.2em;
+}
+
+.post-content a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+    transition: var(--transition);
+}
+
+.post-content a:hover {
+    color: var(--accent-2);
+    border-bottom-color: var(--accent);
+}
+
+.post-content code {
+    background: var(--light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    color: var(--danger);
+}
+
+.post-content pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+}
+
+.post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.post-tag {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.post-tag:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Post Footer */
+.post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 25px;
+    border-top: 2px solid var(--border);
+    margin-top: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.reaction-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.reaction-btn:hover {
+    background: white;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.reaction-btn.active {
+    background: #ffeaea;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.reactions-panel {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: white;
+    border-radius: 30px;
+    padding: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border);
+    z-index: 10;
+}
+
+.reactions-panel.show {
+    display: flex;
+    gap: 5px;
+}
+
+.reaction-option {
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.reaction-option:hover {
+    transform: scale(1.3);
+}
+
+.action-section {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.action-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.action-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* Post Navigation */
+.post-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.nav-post {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    text-decoration: none;
+    color: var(--text);
+    padding: 15px;
+    border-radius: 12px;
+    transition: var(--transition);
+    max-width: 300px;
+}
+
+.nav-post:hover {
+    background: var(--light);
+    transform: translateX(5px);
+}
+
+.nav-post.prev:hover {
+    transform: translateX(-5px);
+}
+
+.nav-direction {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.nav-title {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+/* Comments Section */
+.comments-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.section-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.comment-count {
+    color: var(--muted);
+    font-size: 1rem;
+    font-weight: normal;
+}
+
+.sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.sort-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* Comment Form */
+.comment-form {
+    margin-bottom: 30px;
+}
+
+.comment-editor {
+    background: var(--light);
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+}
+
+.editor-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: white;
+}
+
+.editor-tools {
+    display: flex;
+    gap: 8px;
+}
+
+.tool-btn {
+    padding: 6px 12px;
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.tool-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.comment-input {
+    width: 100%;
+    padding: 20px;
+    border: none;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    background: white;
+}
+
+.comment-input:focus {
+    outline: none;
+}
+
+.editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: white;
+    border-top: 1px solid var(--border);
+}
+
+.editor-footer small {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.btn-submit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-submit:hover {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    transform: translateY(-2px);
+}
+
+/* Auth Prompt */
+.auth-prompt {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+.prompt-icon {
+    font-size: 3rem;
+    opacity: 0.7;
+}
+
+.prompt-content h3 {
+    color: var(--text);
+    margin-bottom: 5px;
+    font-size: 1.3rem;
+}
+
+.prompt-content p {
+    color: var(--muted);
+    margin-bottom: 15px;
+}
+
+.prompt-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-login, .btn-signup {
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-login {
+    background: var(--accent);
+    color: white;
+    border: 2px solid var(--accent);
+}
+
+.btn-login:hover {
+    background: var(--accent-2);
+    transform: translateY(-2px);
+}
+
+.btn-signup {
+    background: white;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+}
+
+.btn-signup:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Comments List */
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.comment-card {
+    background: var(--light);
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+}
+
+.comment-card.author-comment {
+    border-left: 4px solid var(--accent);
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+}
+
+.comment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.comment-author {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.comment-avatar {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.comment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.comment-name {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.comment-badge {
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+}
+
+.comment-badge.author {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.comment-time {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.comment-actions .action-btn {
+    padding: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: var(--transition);
+}
+
+.comment-actions .action-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.comment-content {
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 15px;
+}
+
+.comment-footer {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.reply-btn, .like-comment {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.reply-btn:hover, .like-comment:hover {
+    background: var(--light);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.like-comment.active {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Reply Form */
+.reply-form {
+    margin-top: 15px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.reply-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+    margin-bottom: 10px;
+}
+
+.reply-form textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.reply-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-cancel, .btn-send {
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-cancel {
+    background: var(--light);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn-cancel:hover {
+    background: var(--border);
+}
+
+.btn-send {
+    background: var(--accent);
+    color: white;
+    border: 1px solid var(--accent);
+}
+
+.btn-send:hover {
+    background: var(--accent-2);
+}
+
+/* No Comments */
+.no-comments {
+    text-align: center;
+    padding: 60px 40px;
+}
+
+.no-comments-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    opacity: 0.3;
+}
+
+.no-comments h3 {
+    color: var(--text);
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.no-comments p {
+    color: var(--muted);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Load More */
+.load-more {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.btn-load-more {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: var(--light);
+    color: var(--text);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-load-more:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+/* Detail Sidebar */
+.detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.sidebar-section {
+    background: white;
+    border-radius: var(--radius);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.section-title {
+    color: var(--text);
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Author Widget */
+.author-profile {
+    text-align: center;
+}
+
+.profile-avatar.large {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 15px;
+    font-size: 2rem;
+}
+
+.profile-name {
+    color: var(--text);
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+.profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-number {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.btn-profile {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: var(--light);
+    color: var(--accent);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.btn-profile:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Related Posts */
+.related-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.related-post {
+    display: block;
+    padding: 15px;
+    background: var(--light);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: var(--transition);
+    border: 1px solid var(--border);
+}
+
+.related-post:hover {
+    background: white;
+    border-color: var(--accent);
+    transform: translateX(5px);
+}
+
+.related-title {
+    color: var(--text);
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.related-meta {
+    display: flex;
+    gap: 15px;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.no-related {
+    text-align: center;
+    color: var(--muted);
+    padding: 20px 0;
+}
+
+/* Popular Tags */
+.popular-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.popular-tag {
+    padding: 6px 12px;
+    background: var(--light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.popular-tag:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+/* Community Stats */
+.community-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.community-stat {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background: var(--light);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.8;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quick-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    background: var(--light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.quick-action:hover {
+    background: var(--accent);
+    color: white;
+    transform: translateX(5px);
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: var(--radius);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.modal-content h3 {
+    color: var(--text);
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.modal-content p {
+    color: var(--muted);
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.modal-actions .btn-cancel {
+    background: var(--light);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.modal-actions .btn-delete {
+    background: var(--danger);
+    color: white;
+    border: 1px solid var(--danger);
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .detail-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-sidebar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
+    }
+}
+
+@media (max-width: 768px) {
+    .nav-content {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .nav-actions {
+        justify-content: center;
+    }
+    
+    .post-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .post-title {
+        font-size: 1.8rem;
+    }
+    
+    .post-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .reaction-section {
+        justify-content: center;
+    }
+    
+    .action-section {
+        justify-content: center;
+    }
+    
+    .detail-sidebar {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container, .nav-content {
+        padding: 0 15px;
+    }
+    
+    .main-post, .comments-section, .sidebar-section {
+        padding: 20px;
+    }
+    
+    .author-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .post-stats {
+        justify-content: center;
+    }
+    
+    .auth-prompt {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .prompt-actions {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const likeForm = document.querySelector('.like-form');
+    const likeBtn = document.querySelector('.like-btn');
+    const reactionsPanel = document.getElementById('reactionsPanel');
+    const commentForm = document.getElementById('commentForm');
+    const commentInput = document.querySelector('.comment-input');
+    const deleteModal = document.getElementById('deleteModal');
+    const toolButtons = document.querySelectorAll('.tool-btn');
+    const deletePostBtn = document.querySelector('.delete-post');
+    
+    // Like functionality
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function(e) {
+            if (likeForm) {
+                const formData = new FormData(likeForm);
+                
+                fetch(likeForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        this.classList.toggle('active');
+                        const countSpan = this.querySelector('.reaction-count');
+                        countSpan.textContent = data.like_count;
+                        
+                        if (this.classList.contains('active')) {
+                            this.querySelector('.reaction-icon').textContent = '❤️';
+                            this.querySelector('.reaction-label').textContent = 'Đã thích';
+                        } else {
+                            this.querySelector('.reaction-icon').textContent = '🤍';
+                            this.querySelector('.reaction-label').textContent = 'Thích';
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+    }
+    
+    // Toggle reactions panel
+    function toggleReactions() {
+        reactionsPanel.classList.toggle('show');
+    }
+    
+    // Close reactions panel when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.reaction-section')) {
+            reactionsPanel.classList.remove('show');
+        }
+    });
+    
+    // Reaction buttons
+    document.querySelectorAll('.reaction-option').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reaction = this.dataset.reaction;
+            console.log(`Selected reaction: ${reaction}`);
+            reactionsPanel.classList.remove('show');
+            // Here you would send the reaction to server
+        });
+    });
+    
+    // Share post
+    window.sharePost = function() {
+        const shareData = {
+            title: '{{ post.title }}',
+            text: '{{ post.content|truncatewords:30 }}',
+            url: window.location.href
+        };
+        
+        if (navigator.share) {
+            navigator.share(shareData)
+                .then(() => console.log('Bài viết đã được chia sẻ'))
+                .catch(error => console.log('Lỗi chia sẻ:', error));
+        } else {
+            // Fallback: Copy to clipboard
+            navigator.clipboard.writeText(window.location.href)
+                .then(() => alert('📋 Đã sao chép link bài viết vào clipboard!'))
+                .catch(err => console.error('Lỗi sao chép:', err));
+        }
+    };
+    
+    // Toggle bookmark
+    window.toggleBookmark = function() {
+        const bookmarkBtn = document.querySelector('.bookmark-btn');
+        bookmarkBtn.classList.toggle('active');
+        
+        if (bookmarkBtn.classList.contains('active')) {
+            bookmarkBtn.querySelector('.action-icon').textContent = '🔖';
+            bookmarkBtn.querySelector('.action-text').textContent = 'Đã lưu';
+            console.log('Bài viết đã được lưu');
+        } else {
+            bookmarkBtn.querySelector('.action-icon').textContent = '🔖';
+            bookmarkBtn.querySelector('.action-text').textContent = 'Lưu';
+            console.log('Bài viết đã bỏ lưu');
+        }
+    };
+    
+    // Report post
+    window.reportPost = function() {
+        const reason = prompt('Vui lòng nhập lý do báo cáo bài viết:');
+        if (reason) {
+            console.log('Report submitted:', reason);
+            alert('Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét bài viết này.');
+        }
+    };
+    
+    // Scroll to comments
+    window.scrollToComments = function() {
+        document.getElementById('commentsSection').scrollIntoView({
+            behavior: 'smooth'
+        });
+        if (commentInput) commentInput.focus();
+    };
+    
+    // Toggle sort comments
+    window.toggleSort = function() {
+        const sortText = document.getElementById('sortText');
+        const currentSort = sortText.textContent;
+        const options = ['Mới nhất', 'Cũ nhất', 'Nhiều like nhất'];
+        const currentIndex = options.indexOf(currentSort);
+        const nextIndex = (currentIndex + 1) % options.length;
+        sortText.textContent = options[nextIndex];
+        console.log('Sorting by:', options[nextIndex]);
+    };
+    
+    // Editor tools for comments
+    toolButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            if (!commentInput) return;
+            
+            const tag = this.dataset.tag;
+            const start = commentInput.selectionStart;
+            const end = commentInput.selectionEnd;
+            const selectedText = commentInput.value.substring(start, end);
+            let newText = '';
+            
+            switch(tag) {
+                case 'bold':
+                    newText = `**${selectedText || 'văn bản'}**`;
+                    break;
+                case 'italic':
+                    newText = `*${selectedText || 'văn bản'}*`;
+                    break;
+                case 'code':
+                    newText = selectedText ? `\`${selectedText}\`` : '`code`';
+                    break;
+                case 'link':
+                    newText = `[${selectedText || 'văn bản'}](https://example.com)`;
+                    break;
+            }
+            
+            commentInput.setRangeText(newText, start, end, 'end');
+            commentInput.focus();
+        });
+    });
+    
+    // Submit comment on Ctrl+Enter
+    if (commentInput) {
+        commentInput.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter' && commentForm) {
+                e.preventDefault();
+                commentForm.submit();
+            }
+        });
+    }
+    
+    // Reply to comment
+    window.replyToComment = function(commentId, username) {
+        const replyForm = document.getElementById(`replyForm${commentId}`);
+        const textarea = replyForm.querySelector('textarea');
+        
+        // Hide other reply forms
+        document.querySelectorAll('.reply-form').forEach(form => {
+            form.style.display = 'none';
+        });
+        
+        // Show this reply form
+        replyForm.style.display = 'block';
+        textarea.placeholder = `Trả lời ${username}...`;
+        textarea.focus();
+    };
+    
+    window.cancelReply = function(commentId) {
+        const replyForm = document.getElementById(`replyForm${commentId}`);
+        replyForm.style.display = 'none';
+    };
+    
+    window.sendReply = function(commentId) {
+        const replyForm = document.getElementById(`replyForm${commentId}`);
+        const textarea = replyForm.querySelector('textarea');
+        const content = textarea.value.trim();
+        
+        if (content) {
+            console.log('Sending reply to comment', commentId, ':', content);
+            // Here you would send the reply to server
+            replyForm.style.display = 'none';
+            textarea.value = '';
+        } else {
+            alert('Vui lòng nhập nội dung trả lời!');
+        }
+    };
+    
+    // Load more comments
+    window.loadMoreComments = function() {
+        console.log('Loading more comments...');
+        // Here you would fetch more comments via AJAX
+    };
+    
+    // Delete post modal
+    if (deletePostBtn) {
+        deletePostBtn.addEventListener('click', function() {
+            deleteModal.classList.add('show');
+        });
+    }
+    
+    window.closeModal = function() {
+        deleteModal.classList.remove('show');
+    };
+    
+    // Close modal when clicking outside
+    deleteModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+    
+    // Initialize
+    console.log('Forum detail page loaded');
+});
+</script>
+{% endblock %}

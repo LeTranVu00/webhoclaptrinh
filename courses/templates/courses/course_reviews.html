@@ -1,0 +1,170 @@
+<!-- courses/templates/courses/course_review.html -->
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<div class="review-container">
+    <div class="review-header">
+        <a href="{% url 'course_detail' course.id %}" class="back-btn">← Quay lại khóa học</a>
+        <h1>⭐ Đánh giá khóa học</h1>
+        <p>{{ course.title }}</p>
+    </div>
+    
+    <div class="review-form-card">
+        <form method="post" class="review-form">
+            {% csrf_token %}
+            
+            <div class="rating-section">
+                <h3>Đánh giá của bạn</h3>
+                <div class="stars-input">
+                    {% for i in "12345" %}
+                    <input type="radio" id="star{{ forloop.counter }}" name="rating" 
+                           value="{{ forloop.counter }}" 
+                           {% if existing_review and existing_review.rating == forloop.counter %}checked{% endif %}>
+                    <label for="star{{ forloop.counter }}">★</label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="comment-section">
+                <h3>Bình luận</h3>
+                <textarea name="comment" rows="6" 
+                          placeholder="Chia sẻ trải nghiệm của bạn với khóa học này...">{% if existing_review %}{{ existing_review.comment }}{% endif %}</textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">
+                    {% if existing_review %}Cập nhật đánh giá{% else %}Gửi đánh giá{% endif %}
+                </button>
+                <a href="{% url 'course_detail' course.id %}" class="btn-cancel">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.review-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.review-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.back-btn {
+    color: #3b82f6;
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.review-form-card {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.rating-section {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.stars-input {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    font-size: 2.5em;
+}
+
+.stars-input input {
+    display: none;
+}
+
+.stars-input label {
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.stars-input input:checked ~ label,
+.stars-input label:hover,
+.stars-input label:hover ~ label {
+    color: #fbbf24;
+}
+
+.stars-input input:checked + label {
+    color: #fbbf24;
+}
+
+.comment-section textarea {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.btn-submit, .btn-cancel {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    flex: 1;
+}
+
+.btn-submit {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #2563eb;
+}
+
+.btn-cancel {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.btn-cancel:hover {
+    background: #d1d5db;
+}
+</style>
+
+<script>
+// Highlight stars on hover
+document.querySelectorAll('.stars-input label').forEach(label => {
+    label.addEventListener('mouseenter', function() {
+        const starId = this.getAttribute('for');
+        const starNumber = parseInt(starId.replace('star', ''));
+        
+        // Highlight all stars up to this one
+        for (let i = 1; i <= starNumber; i++) {
+            document.querySelector(`label[for="star${i}"]`).style.color = '#fbbf24';
+        }
+    });
+    
+    label.addEventListener('mouseleave', function() {
+        // Reset stars
+        document.querySelectorAll('.stars-input label').forEach(star => {
+            const input = document.querySelector(`#${star.getAttribute('for')}`);
+            star.style.color = input.checked ? '#fbbf24' : '#ddd';
+        });
+    });
+});
+</script>
+{% endblock %}

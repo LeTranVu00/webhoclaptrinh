@@ -1,0 +1,1335 @@
+{% extends 'courses/base.html' %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-hero">
+        <div class="hero-content">
+            <div class="user-profile">
+                <div class="profile-avatar">
+                    {{ user.username|first|upper }}
+                </div>
+                <div class="profile-info">
+                    <h1>{{ user.username }}</h1>
+                    <p class="profile-subtitle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                        Thành viên từ {{ user.date_joined|date:"d/m/Y" }}
+                    </p>
+                </div>
+            </div>
+            
+            <div class="hero-actions">
+                <a href="/accounts/edit/" class="btn-edit-profile">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Chỉnh sửa hồ sơ
+                </a>
+            </div>
+        </div>
+        
+        <div class="hero-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-number">{{ user_stats.total_courses|default:"0" }}</span>
+                    <span class="stat-label">Khóa học</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-number">{{ user_stats.avg_progress|floatformat:0|default:"0" }}%</span>
+                    <span class="stat-label">Tiến độ TB</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                        <path d="M16 2v5M8 2v5M3 7h18"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-number">{{ user_stats.streak_days|default:"0" }}</span>
+                    <span class="stat-label">Ngày liên tiếp</span>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <span class="stat-number">{{ user_stats.points|default:"0" }}</span>
+                    <span class="stat-label">Điểm kinh nghiệm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+        <div class="content-main">
+            <!-- Quick Actions -->
+            <div class="quick-actions-section">
+                <h2 class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    Thao tác nhanh
+                </h2>
+                <div class="quick-actions-grid">
+                    <a href="{% url 'course_learning_path' current_course.id|default:'1' %}" class="action-card">
+                        <div class="action-icon continue">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <h3>Tiếp tục học</h3>
+                            <p>{{ current_course.title|default:"Khóa học hiện tại" }}</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'my_courses' %}" class="action-card">
+                        <div class="action-icon courses">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <h3>Khóa học của tôi</h3>
+                            <p>{{ user_stats.total_courses|default:"0" }} khóa học</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'cart' %}" class="action-card">
+                        <div class="action-icon cart">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="9" cy="21" r="1"/>
+                                <circle cx="20" cy="21" r="1"/>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <h3>Giỏ hàng</h3>
+                            <p>{{ user_stats.courses_in_cart|default:"0" }} khóa học</p>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'forum_create' %}" class="action-card">
+                        <div class="action-icon forum">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <h3>Viết bài mới</h3>
+                            <p>Chia sẻ kiến thức</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="activity-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Hoạt động gần đây
+                    </h2>
+                </div>
+                
+                <div class="activity-timeline">
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="activity-time">{{ activity.time|date:"H:i" }}</div>
+                        <div class="activity-icon">
+                            {% if activity.type == 'course_complete' %}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            {% elif activity.type == 'post_created' %}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                            </svg>
+                            {% elif activity.type == 'review_added' %}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                            {% else %}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="activity-content">
+                            <h4>{{ activity.title }}</h4>
+                            <p>{{ activity.description }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="activity-empty">
+                        <p>Chưa có hoạt động nào gần đây</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- My Courses -->
+            <div class="courses-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                        Khóa học của tôi
+                    </h2>
+                    <a href="{% url 'my_courses' %}" class="view-all">Xem tất cả →</a>
+                </div>
+                
+                {% if purchased_courses %}
+                <div class="courses-grid">
+                    {% for course in purchased_courses|slice:":4" %}
+                    <div class="course-card">
+                        <div class="course-progress">
+                            <div class="progress-circle">
+                                <svg width="60" height="60" viewBox="0 0 60 60">
+                                    <circle cx="30" cy="30" r="27" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+                                    <circle cx="30" cy="30" r="27" fill="none" 
+                                            stroke="url(#course-gradient-{{ forloop.counter }})" 
+                                            stroke-width="6" stroke-linecap="round"
+                                            stroke-dasharray="{{ course.progress|default:30 }} 100"
+                                            transform="rotate(-90 30 30)"/>
+                                    <defs>
+                                        <linearGradient id="course-gradient-{{ forloop.counter }}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#3b82f6"/>
+                                            <stop offset="100%" stop-color="#8b5cf6"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <span class="progress-text">{{ course.progress|default:30 }}%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="course-content">
+                            <h3>{{ course.title }}</h3>
+                            <p>{{ course.description|truncatechars:80 }}</p>
+                            
+                            <div class="course-actions">
+                                {% if course.progress == 100 %}
+                                <a href="{% url 'certificate_view' course.id %}" class="btn-certificate">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    Chứng chỉ
+                                </a>
+                                {% else %}
+                                <a href="{% url 'course_learning_path' course.id %}" class="btn-resume">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                    Tiếp tục
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-section">
+                    <div class="empty-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h3>Chưa có khóa học nào</h3>
+                    <p>Bắt đầu hành trình học tập của bạn ngay hôm nay!</p>
+                    <a href="/" class="btn-explore">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="16"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                        Khám phá khóa học
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="content-sidebar">
+            <!-- Profile Summary -->
+            <div class="profile-summary">
+                <h3>Hồ sơ của bạn</h3>
+                <div class="summary-info">
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">{{ user.email|default:"Chưa có" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tham gia:</span>
+                        <span class="info-value">{{ user.date_joined|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Đăng nhập cuối:</span>
+                        <span class="info-value">{{ user.last_login|date:"H:i d/m/Y"|default:"Chưa đăng nhập" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Vai trò:</span>
+                        <span class="info-value role-badge">
+                            {% if user.is_superuser %}👑 Quản trị viên
+                            {% elif user.is_staff %}🔧 Staff
+                            {% else %}👤 Thành viên
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="profile-actions">
+                    <a href="{% url 'account_logout' %}" class="btn-logout">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Đăng xuất
+                    </a>
+                </div>
+            </div>
+
+            <!-- Forum Activity -->
+            <div class="forum-activity">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Hoạt động Forum
+                </h3>
+                
+                <div class="forum-stats">
+                    <div class="forum-stat">
+                        <span class="stat-number">{{ user_stats.total_posts|default:"0" }}</span>
+                        <span class="stat-label">Bài viết</span>
+                    </div>
+                    <div class="forum-stat">
+                        <span class="stat-number">{{ user_stats.total_comments|default:"0" }}</span>
+                        <span class="stat-label">Bình luận</span>
+                    </div>
+                    <div class="forum-stat">
+                        <span class="stat-number">{{ user_stats.total_likes|default:"0" }}</span>
+                        <span class="stat-label">Likes</span>
+                    </div>
+                </div>
+                
+                {% if user_posts %}
+                <div class="recent-posts">
+                    <h4>Bài viết gần đây</h4>
+                    {% for post in user_posts|slice:":3" %}
+                    <a href="{% url 'forum_detail' post.id %}" class="post-preview">
+                        <h5>{{ post.title|truncatechars:40 }}</h5>
+                        <div class="post-meta">
+                            <span>{{ post.created_at|date:"d/m" }}</span>
+                            <span>💬 {{ post.comments.count }}</span>
+                            <span>❤️ {{ post.like_count }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <a href="{% url 'forum_create' %}" class="btn-new-post">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Viết bài mới
+                </a>
+            </div>
+
+            <!-- Recent Reviews -->
+            <div class="recent-reviews">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Đánh giá gần đây
+                </h3>
+                
+                {% if user_reviews %}
+                {% for review in user_reviews|slice:":2" %}
+                <div class="review-preview">
+                    <div class="review-header">
+                        <span class="review-course">{{ review.course.title|truncatechars:30 }}</span>
+                        <div class="review-stars">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}⭐{% else %}☆{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="review-excerpt">{{ review.comment|truncatechars:60 }}</p>
+                    <span class="review-date">{{ review.created_at|date:"d/m/Y" }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-reviews">
+                    <p>Chưa có đánh giá nào</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --primary-light: #dbeafe;
+    --secondary: #8b5cf6;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --danger: #ef4444;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-hover: #f8fafc;
+    --bg-light: #f8fafc;
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --radius: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem 3rem;
+}
+
+/* Dashboard Hero */
+.dashboard-hero {
+    background: var(--gradient-primary);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    margin: 1.5rem 0 3rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+}
+
+.profile-info h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+}
+
+.profile-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+.btn-edit-profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: var(--transition);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-edit-profile:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+/* Dashboard Content Layout */
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2.5rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.content-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Section Styles */
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.view-all {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.view-all:hover {
+    color: var(--primary-dark);
+}
+
+/* Quick Actions */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.action-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-decoration: none;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.action-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.action-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.action-icon.continue {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+}
+
+.action-icon.courses {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.action-icon.cart {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+}
+
+.action-icon.forum {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.action-content h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+}
+
+.action-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Activity Timeline */
+.activity-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-item {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.activity-item:hover {
+    border-color: var(--primary);
+    background: var(--bg-hover);
+}
+
+.activity-time {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 50px;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.activity-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+}
+
+.activity-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.activity-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    background: var(--bg-light);
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--border);
+}
+
+/* Courses Grid */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .courses-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.course-card {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.course-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.course-progress {
+    flex-shrink: 0;
+}
+
+.progress-circle {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.course-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.course-content h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.course-content p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.course-actions {
+    margin-top: 0.75rem;
+}
+
+.btn-certificate,
+.btn-resume {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.btn-resume {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-resume:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-certificate {
+    background: var(--success);
+    color: white;
+}
+
+.btn-certificate:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.empty-section {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--bg-light);
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--border);
+}
+
+.empty-icon {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-section h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+}
+
+.empty-section p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.btn-explore {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--gradient-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn-explore:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Sidebar */
+.content-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.profile-summary,
+.forum-activity,
+.recent-reviews {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+}
+
+.profile-summary h3,
+.forum-activity h3,
+.recent-reviews h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.summary-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.info-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.role-badge {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.profile-actions {
+    margin-top: 1.5rem;
+}
+
+.btn-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--danger);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: var(--transition);
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-logout:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.forum-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.forum-stat {
+    text-align: center;
+    padding: 1rem;
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+}
+
+.forum-stat .stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.forum-stat .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.recent-posts {
+    margin-bottom: 1.5rem;
+}
+
+.recent-posts h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0 0 0.75rem;
+}
+
+.post-preview {
+    display: block;
+    padding: 0.75rem;
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    transition: var(--transition);
+}
+
+.post-preview:hover {
+    background: var(--bg-hover);
+    transform: translateX(4px);
+}
+
+.post-preview h5 {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem;
+}
+
+.post-meta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.btn-new-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: var(--transition);
+    width: 100%;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.btn-new-post:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.review-preview {
+    padding: 1rem;
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.review-course {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.review-stars {
+    color: #fbbf24;
+    font-size: 0.875rem;
+}
+
+.review-excerpt {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem;
+    line-height: 1.4;
+}
+
+.review-date {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.empty-reviews {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --border: #334155;
+        --border-light: #1e293b;
+        --bg-card: #1e293b;
+        --bg-hover: #0f172a;
+        --bg-light: #0f172a;
+    }
+    
+    .dashboard-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+    
+    .stat-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .profile-avatar {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .empty-section {
+        background: #0f172a;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-hero {
+        padding: 1.5rem;
+    }
+    
+    .hero-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .user-profile {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .hero-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .course-card {
+        flex-direction: column;
+    }
+    
+    .progress-circle {
+        align-self: center;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update progress circles
+    document.querySelectorAll('.progress-circle').forEach(circle => {
+        const svg = circle.querySelector('svg circle:nth-child(2)');
+        const text = circle.querySelector('.progress-text');
+        const percent = parseInt(text.textContent);
+        
+        svg.style.strokeDasharray = `${percent} 100`;
+    });
+    
+    // Animate stats on scroll
+    const observerOptions = {
+        threshold: 0.5
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const statCards = entry.target.querySelectorAll('.stat-card');
+                statCards.forEach((card, index) => {
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, index * 100);
+                });
+            }
+        });
+    }, observerOptions);
+    
+    observer.observe(document.querySelector('.dashboard-hero'));
+    
+    // Initialize opacity for animation
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    });
+    
+    // Activity timeline hover effects
+    document.querySelectorAll('.activity-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateX(8px)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateX(0)';
+        });
+    });
+    
+    // Course card progress animation
+    document.querySelectorAll('.course-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            const circle = this.querySelector('.progress-circle circle:nth-child(2)');
+            const originalStroke = circle.style.strokeDasharray;
+            
+            circle.style.transition = 'stroke-dasharray 1s ease';
+            circle.style.strokeDasharray = '0 100';
+            
+            setTimeout(() => {
+                circle.style.strokeDasharray = originalStroke;
+            }, 50);
+        });
+    });
+    
+    // Quick action card hover effects
+    document.querySelectorAll('.action-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            const icon = this.querySelector('.action-icon');
+            icon.style.transform = 'scale(1.1) rotate(5deg)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            const icon = this.querySelector('.action-icon');
+            icon.style.transform = 'scale(1) rotate(0)';
+        });
+    });
+    
+    // Update streak counter animation
+    const streakDays = parseInt('{{ user_stats.streak_days|default:"0" }}');
+    if (streakDays > 0) {
+        const streakCard = document.querySelector('.hero-stats .stat-card:nth-child(3)');
+        if (streakCard) {
+            streakCard.style.animation = 'pulse 2s infinite';
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                    100% { transform: scale(1); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+    
+    // Show last login time with live update
+    const lastLoginElement = document.querySelector('.info-row:nth-child(3) .info-value');
+    if (lastLoginElement) {
+        const lastLoginText = lastLoginElement.textContent.trim();
+        if (lastLoginText !== 'Chưa đăng nhập') {
+            setInterval(() => {
+                // Update relative time display
+                const now = new Date();
+                const loginTime = new Date('{{ user.last_login|default:"" }}');
+                const diffMs = now - loginTime;
+                const diffMins = Math.floor(diffMs / 60000);
+                
+                if (diffMins < 1) {
+                    lastLoginElement.textContent = 'Vừa xong';
+                } else if (diffMins < 60) {
+                    lastLoginElement.textContent = `${diffMins} phút trước`;
+                } else if (diffMins < 1440) {
+                    const hours = Math.floor(diffMins / 60);
+                    lastLoginElement.textContent = `${hours} giờ trước`;
+                }
+            }, 60000); // Update every minute
+        }
+    }
+    
+    // Add loading animation for course progress
+    document.querySelectorAll('.progress-circle').forEach(circle => {
+        circle.style.opacity = '0';
+        setTimeout(() => {
+            circle.style.transition = 'opacity 0.5s ease';
+            circle.style.opacity = '1';
+        }, 300);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Học Lập Trình</title>
+    <style>
+        :root {
+            --accent: #3b82f6;
+            --accent-2: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #1e293b;
+            --muted: #64748b;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            --radius: 16px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text);
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Header với gradient hiện đại */
+        .login-header {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.1;
+            animation: float 20s linear infinite;
+        }
+        
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-30px, -30px) rotate(360deg); }
+        }
+        
+        .login-header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Form styling */
+        .login-form {
+            padding: 40px 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-wrapper .icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 1.2rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 16px 16px 16px 48px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: var(--transition);
+            background: var(--light);
+            font-family: inherit;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Button styling */
+        .btn-login {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--success), #34d399);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-login:active {
+            transform: translateY(-1px);
+        }
+        
+        /* Error message */
+        .error-message {
+            background: linear-gradient(135deg, #fee, #fdd);
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            border-left: 4px solid #dc2626;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+        
+        .error-message::before {
+            content: '⚠️';
+            font-size: 1.2rem;
+        }
+        
+        /* Login links */
+        .login-links {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px solid var(--border);
+        }
+        
+        .login-links p {
+            margin-bottom: 15px;
+            color: var(--muted);
+        }
+        
+        .login-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .login-links a:hover {
+            color: var(--accent-2);
+            text-decoration: underline;
+        }
+        
+        /* Remember me checkbox */
+        .remember-me {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .remember-me label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+        }
+        
+        .forgot-password {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+        
+        /* Social login options */
+        .social-login {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .social-login .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: var(--muted);
+        }
+        
+        .social-login .divider::before,
+        .social-login .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        
+        .social-login .divider span {
+            padding: 0 15px;
+            font-size: 0.9rem;
+        }
+        
+        .social-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn-social {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-social.google:hover {
+            background: #f8fafc;
+            border-color: #dc2626;
+        }
+        
+        .btn-social.facebook:hover {
+            background: #f8fafc;
+            border-color: #2563eb;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 10px;
+            }
+            
+            .login-header {
+                padding: 30px 20px;
+            }
+            
+            .login-header h1 {
+                font-size: 28px;
+            }
+            
+            .login-form {
+                padding: 30px 20px;
+            }
+            
+            .social-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-container {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Custom checkbox */
+        .custom-checkbox {
+            position: relative;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .custom-checkbox input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .checkmark {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 20px;
+            width: 20px;
+            background-color: white;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .checkmark::after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        
+        .custom-checkbox input:checked ~ .checkmark::after {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 Đăng nhập</h1>
+            <p>Chào mừng trở lại với cộng đồng học lập trình</p>
+        </div>
+        
+        <div class="login-form">
+            {% if form.errors %}
+            <div class="error-message">
+                Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.
+            </div>
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập hoặc Email</label>
+                    <div class="input-wrapper">
+                        <span class="icon">👤</span>
+                        <input type="text" id="username" name="login" placeholder="Nhập tên đăng nhập hoặc email" required autofocus>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <div class="input-wrapper">
+                        <span class="icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" required>
+                    </div>
+                </div>
+                
+                <div class="remember-me">
+                    <label>
+                        <div class="custom-checkbox">
+                            <input type="checkbox" id="remember" name="remember">
+                            <span class="checkmark"></span>
+                        </div>
+                        <span>Ghi nhớ đăng nhập</span>
+                    </label>
+                    <a href="/accounts/password/reset/" class="forgot-password">Quên mật khẩu?</a>
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    <span>🚀</span>
+                    <span>Đăng nhập</span>
+                </button>
+            </form>
+            
+            <!-- Social Login Options -->
+            <div class="social-login">
+                <div class="divider">
+                    <span>Hoặc đăng nhập với</span>
+                </div>
+                
+                <div class="social-buttons">
+                    <button type="button" class="btn-social google">
+                        <span>🔍</span>
+                        <span>Google</span>
+                    </button>
+                    <button type="button" class="btn-social facebook">
+                        <span>👍</span>
+                        <span>Facebook</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="login-links">
+                <p>Chưa có tài khoản? <a href="/accounts/signup/">📝 Đăng ký ngay</a></p>
+                <p><a href="/">🏠 Quay lại trang chủ</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus vào input đầu tiên
+            const usernameInput = document.getElementById('username');
+            if (usernameInput && !usernameInput.value) {
+                usernameInput.focus();
+            }
+            
+            // Toggle password visibility
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                const icon = passwordInput.previousElementSibling;
+                if (icon && icon.classList.contains('icon')) {
+                    icon.style.cursor = 'pointer';
+                    icon.addEventListener('click', function() {
+                        if (passwordInput.type === 'password') {
+                            passwordInput.type = 'text';
+                            icon.textContent = '👁️';
+                        } else {
+                            passwordInput.type = 'password';
+                            icon.textContent = '🔒';
+                        }
+                    });
+                }
+            }
+            
+            // Form validation
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value.trim();
+                
+                if (!username || !password) {
+                    e.preventDefault();
+                    if (!username) {
+                        showError('Vui lòng nhập tên đăng nhập hoặc email');
+                    } else {
+                        showError('Vui lòng nhập mật khẩu');
+                    }
+                }
+            });
+            
+            function showError(message) {
+                let errorDiv = document.querySelector('.error-message');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    document.querySelector('.login-form').insertBefore(errorDiv, form);
+                }
+                errorDiv.innerHTML = `⚠️ ${message}`;
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (errorDiv && errorDiv.parentNode) {
+                        errorDiv.style.opacity = '0';
+                        errorDiv.style.transform = 'translateY(-10px)';
+                        setTimeout(() => {
+                            if (errorDiv && errorDiv.parentNode) {
+                                errorDiv.parentNode.removeChild(errorDiv);
+                            }
+                        }, 300);
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
