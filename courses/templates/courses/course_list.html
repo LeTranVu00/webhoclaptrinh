@@ -1,6 +1,34 @@
 {% extends 'courses/base.html' %}
+{% load vn_filters %}
 
 {% block content %}
+<!-- Breadcrumb Section -->
+<div class="breadcrumb-optimized" id="breadcrumb">
+    <div id="courses-results" class="container">
+        <div class="course-list-breadcrumb">
+            <a href="/" class="crumb">
+                <span>🏠</span>
+                <span>Trang chủ</span>
+            </a>
+            <div class="crumb-separator">›</div>
+            <div class="crumb current">
+                <span>📚</span>
+                <span>
+                    {% if selected_category %}
+                        {% for value, label in course_categories %}
+                            {% if value == selected_category %}{{ label }}{% endif %}
+                        {% endfor %}
+                    {% elif query %}
+                        Tìm kiếm: "{{ query }}"
+                    {% else %}
+                        Tất cả khóa học
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Courses Page -->
 <div class="courses-page">
     <!-- Hero Section -->
@@ -67,12 +95,12 @@
             </div>
             
             <div class="sort-options">
-                <select class="sort-select" onchange="window.location.href=this.value">
-                    <option value="{% url 'course_list' %}?sort=popular">Phổ biến nhất</option>
-                    <option value="{% url 'course_list' %}?sort=newest">Mới nhất</option>
-                    <option value="{% url 'course_list' %}?sort=price_asc">Giá thấp đến cao</option>
-                    <option value="{% url 'course_list' %}?sort=price_desc">Giá cao đến thấp</option>
-                    <option value="{% url 'course_list' %}?sort=rating">Đánh giá cao nhất</option>
+                <select class="sort-select" id="sortSelect">
+                    <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Phổ biến nhất</option>
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Mới nhất</option>
+                    <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Giá thấp đến cao</option>
+                    <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Giá cao đến thấp</option>
+                    <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Đánh giá cao nhất</option>
                 </select>
             </div>
         </div>
@@ -132,7 +160,7 @@
                 <div class="course-footer">
                     <div class="course-price-section">
                         <div class="course-price">
-                            <span class="price-current">{{ course.price|floatformat:0 }}</span>
+                            <span class="price-current">{{ course.price|vn_thousand }}</span>
                             <span class="price-unit">VNĐ</span>
                         </div>
                         
@@ -250,6 +278,119 @@
     --transition: all 0.3s ease;
 }
 
+/* Breadcrumb Styles */
+.breadcrumb-optimized {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    transition: var(--transition);
+}
+
+.breadcrumb-optimized.sticky {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0.75rem 0;
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.breadcrumb-optimized .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.course-list-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    background: white;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    transition: var(--transition);
+}
+
+.breadcrumb-optimized.sticky .course-list-breadcrumb {
+    padding: 0.5rem 1.25rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.crumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+        
+            // When user changes sort, navigate to the prepared URL (option values are full URLs)
+            sortSelect.addEventListener('change', function() {
+                const target = this.value;
+                if (!target) return;
+                // If value is a full URL, navigate to it; otherwise build one
+                try {
+                    const u = new URL(target);
+                    window.location.href = u.toString();
+                } catch (e) {
+                    // fallback: treat as path
+                    window.location.href = target;
+                }
+            });
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.crumb:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.crumb.current {
+    color: var(--text);
+    font-weight: 600;
+    cursor: default;
+    background: #f8fafc;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crumb.current span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.crumb-separator {
+    color: var(--text-secondary);
+    padding: 0 4px;
+}
+
+@media (max-width: 768px) {
+    .course-list-breadcrumb {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .crumb.current {
+        max-width: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .crumb.current {
+        max-width: 150px;
+    }
+}
+
 /* Reset and Base Styles */
 * {
     margin: 0;
@@ -294,6 +435,15 @@ body {
     font-size: 2.5rem;
     font-weight: 800;
     margin-bottom: 15px;
+    
+        // Fallback: ensure category/tag filter anchors always trigger navigation
+        document.querySelectorAll('.filter-tags a, .category-card').forEach(a => {
+            a.addEventListener('click', function(e) {
+                // Allow normal behavior but force navigation as a fallback
+                e.preventDefault();
+                window.location.href = this.href;
+            });
+        });
 }
 
 .hero-description {
@@ -885,6 +1035,66 @@ body {
     cursor: default;
 }
 
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text: #f1f5f9;
+        --muted: #94a3b8;
+        --light: #0f172a;
+        --border: #334155;
+    }
+    
+    .breadcrumb-optimized {
+        background: rgba(30, 41, 59, 0.95);
+    }
+    
+    .course-list-breadcrumb {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    
+    .crumb {
+        color: #60a5fa;
+    }
+    
+    .crumb.current {
+        background: #334155;
+        color: #f1f5f9;
+    }
+    
+    .category-filter,
+    .course-card,
+    .no-courses {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    
+    .filter-tag {
+        background: #334155;
+        color: #f1f5f9;
+    }
+    
+    .filter-tag.active {
+        background: #3b82f6;
+    }
+    
+    .sort-select {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    
+    .page-link {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    
+    .page-number.active {
+        background: #3b82f6;
+    }
+}
+
 /* Responsive Fixes */
 @media (max-width: 1024px) {
     .courses-grid {
@@ -895,6 +1105,7 @@ body {
 @media (max-width: 768px) {
     .courses-hero {
         padding: 40px 0;
+        margin-top: 1rem;
     }
     
     .hero-title {
@@ -1005,95 +1216,46 @@ body {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Breadcrumb sticky effect
+    const breadcrumb = document.getElementById('breadcrumb');
+    if (breadcrumb) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                breadcrumb.classList.add('sticky');
+            } else {
+                breadcrumb.classList.remove('sticky');
+            }
+        });
+    }
+    
     // Update sort select value based on current URL
     const sortSelect = document.querySelector('.sort-select');
     if (sortSelect) {
         const urlParams = new URLSearchParams(window.location.search);
-        const currentSort = urlParams.get('sort') || 'popular';
         
-        // Update options URLs with current filters
+        // Update options with a data-url attribute while keeping option.value as the sort key
         const baseUrl = window.location.origin + window.location.pathname;
         sortSelect.querySelectorAll('option').forEach(option => {
-            const value = option.value.split('sort=')[1] || 'popular';
+            const sortKey = option.value || option.getAttribute('value') || 'popular';
             const url = new URL(baseUrl);
-            
-            // Add all existing parameters
-            urlParams.forEach((value, key) => {
-                if (key !== 'sort') {
-                    url.searchParams.set(key, value);
-                }
+
+            // Add all existing parameters except sort
+            urlParams.forEach((v, key) => {
+                if (key !== 'sort') url.searchParams.set(key, v);
             });
-            
-            // Add sort parameter
-            url.searchParams.set('sort', value);
-            
-            option.value = url.toString();
+
+            url.searchParams.set('sort', sortKey);
+            option.dataset.url = url.toString();
         });
-        
-        // Set current value
-        sortSelect.value = currentSort;
+
+        // Set current value (match server default 'newest')
+        sortSelect.value = urlParams.get('sort') || 'newest';
+
+        // When user changes sort, load results via AJAX using delegated handler (see below)
+        // We keep data-url on options so delegation can read it.
     }
     
-    // Add to cart animation
-    document.querySelectorAll('.btn-cart').forEach(button => {
-        button.addEventListener('click', function(e) {
-            // In a real app, you would make an AJAX request here
-            // For demo, just show a notification
-            
-            // Create notification
-            const notification = document.createElement('div');
-            notification.className = 'cart-notification';
-            notification.innerHTML = `
-                <span>✅</span>
-                <span>Đã thêm vào giỏ hàng</span>
-            `;
-            
-            // Add styles
-            const style = document.createElement('style');
-            style.textContent = `
-                .cart-notification {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: white;
-                    padding: 15px 20px;
-                    border-radius: 16px;
-                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    font-weight: 600;
-                    color: var(--success);
-                    z-index: 1000;
-                    animation: slideIn 0.3s ease-out;
-                    border: 2px solid #10b981;
-                }
-                
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                
-                @keyframes slideOut {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-            
-            document.head.appendChild(style);
-            document.body.appendChild(notification);
-            
-            // Remove notification after 3 seconds
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease-out';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }, 3000);
-        });
-    });
+    
     
     // Search form focus
     const searchInput = document.querySelector('.search-input');
@@ -1116,6 +1278,133 @@ document.addEventListener('DOMContentLoaded', function() {
         
         card.addEventListener('mouseleave', function() {
             this.style.zIndex = '';
+        });
+    });
+
+    // Handle add-to-cart submissions via delegation to avoid page reload
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function showCartNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'cart-notification';
+        notification.innerHTML = `<span>✅</span><span>${message}</span>`;
+
+        if (!document.getElementById('cart-notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'cart-notification-styles';
+            style.textContent = `
+                .cart-notification { position: fixed; top: 20px; right: 20px; background: white; padding: 12px 16px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); display:flex; gap:8px; align-items:center; font-weight:600; z-index:1200; border:2px solid #10b981; }
+                @keyframes cn-out { from{transform:translateX(0);opacity:1} to{transform:translateX(100%);opacity:0} }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(notification);
+        setTimeout(() => { notification.style.animation = 'cn-out 0.3s ease-out'; setTimeout(() => notification.remove(), 300); }, 3000);
+    }
+
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (!form || !form.matches) return;
+        if (!form.matches('form.action-form[data-ajax="add-to-cart"]')) return;
+
+    
+    // AJAX loader: fetch results and replace the `#courses-results` container
+    async function loadCoursesViaAjax(url) {
+        const container = document.querySelector('#courses-results');
+        if (!container) { window.location.href = url; return; }
+        // show loading overlay
+        let overlay = document.getElementById('courses-loading-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'courses-loading-overlay';
+            overlay.style = 'position:relative';
+            container.appendChild(overlay);
+        }
+        const spinner = document.createElement('div');
+        spinner.className = 'ajax-spinner';
+        spinner.style = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.6);z-index:1200';
+        spinner.innerHTML = '<div style="padding:12px 18px;border-radius:10px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,0.08);">Đang tải…</div>';
+        container.appendChild(spinner);
+
+        try {
+            const scrollY = window.scrollY;
+            console.debug('[AJAX] loading', url);
+            const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!resp.ok) throw new Error('Network response was not ok');
+            const text = await resp.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const newResults = doc.querySelector('#courses-results');
+            if (newResults) {
+                container.innerHTML = newResults.innerHTML;
+                history.pushState({}, '', url);
+                window.scrollTo({ top: scrollY, behavior: 'auto' });
+                console.debug('[AJAX] replaced results');
+            } else {
+                console.warn('[AJAX] #courses-results not found in response, falling back');
+                window.location.href = url;
+            }
+        } catch (err) {
+            console.error('[AJAX] load failed', err);
+            window.location.href = url; // fallback
+        } finally {
+            spinner.remove();
+            if (overlay) overlay.remove();
+        }
+    }
+
+    // Use event delegation so newly injected DOM elements keep working
+    document.addEventListener('click', function(e) {
+        const a = e.target.closest('.filter-tags a, .category-card');
+        if (a) {
+            e.preventDefault();
+            const href = a.href;
+            if (href) loadCoursesViaAjax(href);
+        }
+    });
+
+    // Delegate sort select change
+    document.addEventListener('change', function(e) {
+        const sel = e.target.closest && e.target.closest('.sort-select');
+        if (sel) {
+            const selected = sel.options[sel.selectedIndex];
+            const url = selected && selected.dataset && selected.dataset.url ? selected.dataset.url : null;
+            if (url) {
+                e.preventDefault();
+                loadCoursesViaAjax(url);
+            }
+        }
+    });
+            body: formData,
+            credentials: 'same-origin',
+            headers: Object.assign({ 'X-Requested-With': 'XMLHttpRequest' }, csrftoken ? { 'X-CSRFToken': csrftoken } : {})
+        }).then(response => {
+            if (response.status === 403) {
+                // Not authorized or CSRF issue — redirect to login
+                window.location.href = '{% url "account_login" %}?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+                throw new Error('Forbidden');
+            }
+            if (!response.ok) throw new Error('Network error');
+            return response.json().catch(() => ({ success: true }));
+        }).then(data => {
+            const msg = (data && data.message) ? data.message : 'Đã thêm vào giỏ hàng';
+            showCartNotification(msg);
+            if (data && typeof data.cart_count !== 'undefined') {
+                const cartCountEl = document.querySelector('.cart-count');
+                if (cartCountEl) cartCountEl.textContent = data.cart_count;
+            }
+        }).catch(err => {
+            if (err && err.message !== 'Forbidden') {
+                console.error(err);
+                showCartNotification('Không thể thêm vào giỏ hàng');
+            }
+        }).finally(() => {
+            if (submitBtn) submitBtn.disabled = false;
         });
     });
 });

@@ -92,9 +92,9 @@
                 <div class="posts-header">
                     <h2>📝 Bài viết mới nhất</h2>
                     <div class="sort-options">
-                        <button class="sort-btn active">Mới nhất</button>
-                        <button class="sort-btn">Phổ biến</button>
-                        <button class="sort-btn">Nhiều bình luận</button>
+                        <a href="?sort=new{% if tag_filter %}&tag={{ tag_filter }}{% endif %}" class="sort-btn {% if sort == 'new' %}active{% endif %}">Mới nhất</a>
+                        <a href="?sort=popular{% if tag_filter %}&tag={{ tag_filter }}{% endif %}" class="sort-btn {% if sort == 'popular' %}active{% endif %}">Phổ biến</a>
+                        <a href="?sort=comments{% if tag_filter %}&tag={{ tag_filter }}{% endif %}" class="sort-btn {% if sort == 'comments' %}active{% endif %}">Nhiều bình luận</a>
                     </div>
                 </div>
 
@@ -190,18 +190,10 @@
                         👥 Hoạt động gần đây
                     </h3>
                     <div class="activity-list">
-                        <div class="activity-item">
-                            <span class="activity-icon">📝</span>
-                            <span>Nguyễn Văn A đã đăng bài mới</span>
-                        </div>
-                        <div class="activity-item">
-                            <span class="activity-icon">💬</span>
-                            <span>Trần Thị B đã bình luận</span>
-                        </div>
-                        <div class="activity-item">
-                            <span class="activity-icon">❤️</span>
-                            <span>Lê Văn C đã thích bài viết</span>
-                        </div>
+                            <div id="activityListPlaceholder">
+                                <div class="activity-item">Đang tải hoạt động gần đây...</div>
+                            </div>
+                            <div id="activityList" class="activity-list" style="display:none"></div>
                     </div>
                 </div>
 
@@ -959,6 +951,39 @@
     }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    // Poll recent activity every 10 seconds
+    async function fetchActivity(){
+        try{
+            const resp = await fetch('{% url "recent_activity" %}');
+            const data = await resp.json();
+            const list = document.getElementById('activityList');
+            const placeholder = document.getElementById('activityListPlaceholder');
+            if (!list) return;
+            list.innerHTML = '';
+            data.events.forEach(ev => {
+                const item = document.createElement('div');
+                item.className = 'activity-item';
+                if (ev.type === 'post'){
+                    item.innerHTML = `<span class="activity-icon">📝</span><span>${ev.user} đã đăng: <a href="/forum/${ev.id}/">${ev.title}</a></span>`;
+                } else if (ev.type === 'comment'){
+                    item.innerHTML = `<span class="activity-icon">💬</span><span>${ev.user} đã bình luận: <a href="/forum/${ev.post_id}/#comments">${ev.content}</a></span>`;
+                }
+                list.appendChild(item);
+            });
+            if (placeholder) placeholder.style.display = 'none';
+            list.style.display = 'block';
+        }catch(err){
+            console.error('Failed to fetch activity', err);
+        }
+    }
+
+    fetchActivity();
+    setInterval(fetchActivity, 10000);
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

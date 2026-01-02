@@ -809,33 +809,15 @@
                     return;
                 }
                 
-                // Show loading
+                // Show loading and submit the real form to the server
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<div class="loading"></div><span>Đang đăng ký...</span>';
-                
-                // Simulate API call (replace with actual form submission)
+
+                // Submit the form (allow Django/allauth to handle registration and send confirmation email)
+                // Use a small timeout to allow the loading UI to render before navigation
                 setTimeout(() => {
-                    // In a real app, you would submit the form here
-                    // form.submit();
-                    
-                    // For demo purposes, show success message
-                    showMessage('✅ Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.', 'success-message');
-                    
-                    // Reset form after successful registration
-                    setTimeout(() => {
-                        form.reset();
-                        passwordRules.length.classList.remove('valid');
-                        passwordRules.mixed.classList.remove('valid');
-                        passwordRules.special.classList.remove('valid');
-                        passwordRules.common.classList.remove('valid');
-                        strengthBar.style.width = '0%';
-                        strengthText.textContent = 'Độ mạnh: Yếu';
-                        strengthText.style.color = '';
-                        passwordMatch.textContent = '';
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<span>🎉</span><span>Đăng ký tài khoản</span>';
-                    }, 2000);
-                }, 2000);
+                    form.submit();
+                }, 200);
             });
         });
     </script>

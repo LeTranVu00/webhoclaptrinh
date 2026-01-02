@@ -123,6 +123,8 @@ class ForumPost(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Ngày cập nhật")
     tags = models.CharField(max_length=100, blank=True, verbose_name="Tags")
     is_pinned = models.BooleanField(default=False, verbose_name="Ghim bài")
+    is_featured = models.BooleanField(default=False, verbose_name="Nổi bật")
+    views = models.PositiveIntegerField(default=0, verbose_name="Lượt xem")
     
     class Meta:
         ordering = ['-is_pinned', '-created_at']

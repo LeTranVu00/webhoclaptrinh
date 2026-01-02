@@ -276,14 +276,13 @@
 
         .section-title {
             text-align: center;
-            margin-bottom: 3.5rem;
+            margin: 0 auto 3.5rem auto;
             font-size: 2.5rem;
             font-weight: 800;
             color: var(--text);
             position: relative;
-            display: inline-block;
-            left: 50%;
-            transform: translateX(-50%);
+            display: block;
+            max-width: 1000px;
             background: white;
             padding: 1rem 2.5rem;
             border-radius: 50px;
@@ -291,7 +290,7 @@
             z-index: 1;
         }
 
-        .section-title::before {
+        .categories-section .section-title::before {
             content: '📚';
             margin-right: 12px;
         }
@@ -780,29 +779,36 @@
         }, 5000);
     </script>
     <script>
-        // Append #breadcrumb to top-level nav links (except account/cart links)
-        (function() {
-            // exclude only account-related pages; include cart and my-courses so they scroll to breadcrumb
-            const excluded = ['accounts', 'my-dashboard'];
-            document.querySelectorAll('nav a[href^="/"]').forEach(a => {
-                try {
-                    const raw = a.getAttribute('href');
-                    if (!raw) return;
-                    if (raw === '/' || raw.includes('#')) return;
-                    const u = new URL(raw, location.origin);
-                    const segments = u.pathname.split('/').filter(Boolean);
-                    // Append for top-level pages (e.g. /about/), forum create (/forum/create/),
-                    // or any route containing 'learning-path' so the page scrolls to breadcrumb.
-                    const isForumCreate = (segments[0] === 'forum' && segments[1] === 'create');
-                    const hasLearningPath = segments.includes('learning-path');
-                    if ((segments.length === 1 && !excluded.includes(segments[0])) || isForumCreate || hasLearningPath) {
-                        // keep any search params, append fragment
-                        a.setAttribute('href', u.pathname + (u.search || '') + '#breadcrumb');
+            // Append #breadcrumb to safe internal links so destination pages auto-scroll to breadcrumb
+            (function() {
+                const skipPrefixes = ['/accounts', '/admin', '/static', '/media'];
+                // file extensions to skip (images, assets, documents)
+                const skipExtRegex = /\.[a-zA-Z0-9]{1,5}(?:$|[?#])/;
+
+                document.querySelectorAll('a[href^="/"]').forEach(a => {
+                    try {
+                        const raw = a.getAttribute('href');
+                        if (!raw) return;
+                        // skip anchors, mailto, tel, fragments, or links that already have a fragment
+                        if (raw.startsWith('#') || raw.startsWith('mailto:') || raw.startsWith('tel:') || raw.includes('#')) return;
+                        // skip known prefixes
+                        for (const p of skipPrefixes) {
+                            if (raw.startsWith(p)) return;
+                        }
+                        // skip obvious file links
+                        if (skipExtRegex.test(raw)) return;
+
+                        const u = new URL(raw, location.origin);
+                        // skip if pointing to a different origin (safety)
+                        if (u.origin !== location.origin) return;
+
+                        // Build new href preserving search params
+                        const newHref = u.pathname + (u.search || '') + '#breadcrumb';
+                        a.setAttribute('href', newHref);
+                    } catch (e) {
+                        // ignore malformed URLs
                     }
-                } catch (e) {
-                    // ignore
-                }
-            });
+                });
 
             // If page opened with #breadcrumb, adjust scroll so sticky nav doesn't cover it
             function scrollToBreadcrumbIfNeeded() {
@@ -817,9 +823,17 @@
                 }
             }
 
-            // Run on load (use timeout to allow browser's native jump to complete)
+            // Run on load: if opened from internal link or URL has #breadcrumb, scroll to breadcrumb
             window.addEventListener('load', function() {
-                setTimeout(scrollToBreadcrumbIfNeeded, 50);
+                var isInternal = false;
+                try {
+                    isInternal = document.referrer && document.referrer.indexOf(location.origin) === 0;
+                } catch (e) {
+                    isInternal = false;
+                }
+                if (location.hash === '#breadcrumb' || isInternal) {
+                    setTimeout(scrollToBreadcrumbIfNeeded, 50);
+                }
             });
         })();
     </script>

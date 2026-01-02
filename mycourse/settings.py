@@ -49,6 +49,12 @@ SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
+# Authentication backends: include allauth backend so login/verification via email works
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -63,6 +69,10 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'mycourse.urls'
 
 import os
+
+# Load environment variables from a .env file at project root (optional)
+from dotenv import load_dotenv
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 TEMPLATES = [
     {
@@ -144,12 +154,60 @@ STATICFILES_DIRS = [
 ]
 
 # Email Configuration
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'letranvudeptrai@gmail.com'  # Thay bằng email của bạn
-EMAIL_HOST_PASSWORD = 'vzid jjni mjme tvif'  # Mật khẩu ứng dụng
-DEFAULT_FROM_EMAIL = 'Học Lập Trình <noreply@hoclaptrinh.com>'
-ADMIN_EMAIL = 'letranvudeptrai@gmail.com'  # Email nhận thông báo
+# Prefer reading email credentials from environment for safety. For local testing
+# set the env vars below (see README comments). Default backend is SMTP for
+# real delivery; set DJANGO_EMAIL_BACKEND to console backend to print emails.
+# Email Configuration
+# By default this project will use Gmail SMTP to send confirmation emails.
+# You can either set the credentials via environment variables (recommended),
+# or fill them directly below (NOT recommended for public repos).
+
+# Determine email backend. Priority:
+# 1) DJANGO_EMAIL_BACKEND env var (explicit)
+# 2) If DEBUG and USE_SMTP not set/false -> console backend (easy dev debugging)
+# 3) Otherwise use SMTP backend
+DJANGO_EMAIL_BACKEND = os.environ.get('DJANGO_EMAIL_BACKEND')
+if DJANGO_EMAIL_BACKEND:
+    EMAIL_BACKEND = DJANGO_EMAIL_BACKEND
+else:
+    if DEBUG and os.environ.get('USE_SMTP', '').lower() not in ('1', 'true', 'yes'):
+        EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    else:
+        EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# SMTP configuration (defaults)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') in ('True', 'true', '1')
+
+# --- Configure below: either set env vars, or replace the placeholders directly. ---
+# Example (fill with your Gmail and 16-char app password):
+# EMAIL_HOST_USER = 'siculakeomut123@gmail.com'
+# EMAIL_HOST_PASSWORD = 'your_16_char_app_password'
+
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', f'Học Lập Trình <{EMAIL_HOST_USER}>')
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', EMAIL_HOST_USER)
+
+# django-allauth email settings (enable email verification flow)
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', 'mandatory')
+ACCOUNT_AUTHENTICATION_METHOD = os.environ.get('ACCOUNT_AUTHENTICATION_METHOD', 'username_email')
+# Use http for local dev links (allauth uses this to build confirmation URLs)
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', 'http')
+
+# When user clicks email confirmation link, confirm on GET and log them in automatically.
+# This makes the confirmation link immediately activate the account and sign the user in.
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+
+# Development-only flag to allow auto-login on email confirmation (useful for QA).
+# Defaults to True in DEBUG, False otherwise. Set to '0'/'false' in .env to disable.
+DEV_AUTO_LOGIN_ON_CONFIRM = os.environ.get(
+    'DEV_AUTO_LOGIN_ON_CONFIRM', '1' if DEBUG else '0'
+).lower() in ('1', 'true', 'yes')
+
+# Optional site domain override for confirmation links
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', '')

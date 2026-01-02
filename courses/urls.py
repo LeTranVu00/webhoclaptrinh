@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('', views.home, name='course_list'),
@@ -15,15 +16,25 @@ urlpatterns = [
     path('generate-qr/<int:course_id>/', views.generate_qr_code, name='generate_qr'),
     path('about/', views.about, name='about'),
     path('contact/', views.contact, name='contact'),
+    # Development helper login (use only in DEBUG; requires DEV_LOGIN_TOKEN in .env)
+    path('dev-login/', views.dev_login, name='dev_login'),
+    # Development helper confirm + login (dev-only)
+    path('dev-confirm/<str:key>/', views.dev_confirm_and_login, name='dev_confirm'),
     path('my-dashboard/', views.user_dashboard, name='user_dashboard'),
     path('my-courses/', views.my_courses, name='my_courses'),
     path('logout/', views.custom_logout, name='custom_logout'),
     path('forum/', views.forum_list, name='forum_list'),
     path('forum/create/', views.forum_create, name='forum_create'),
     path('forum/<int:post_id>/', views.forum_detail, name='forum_detail'),
+    path('forum/tag/<str:tag>/', views.forum_tag, name='forum_tag'),
+    path('user/<str:username>/', views.user_profile, name='user_profile'),
+    path('forum/<int:post_id>/toggle-pin/', views.forum_toggle_pin, name='forum_toggle_pin'),
+    path('forum/<int:post_id>/toggle-feature/', views.forum_toggle_feature, name='forum_toggle_feature'),
     path('forum/<int:post_id>/edit/', views.forum_edit, name='forum_edit'),
+    path('forum/<int:post_id>/delete/', views.forum_delete, name='forum_delete'),
     path('forum/<int:post_id>/like/', views.toggle_like, name='toggle_like'),
     path('forum/<int:post_id>/comment/', views.add_comment, name='add_comment'),
+    path('recent-activity/', views.recent_activity, name='recent_activity'),
     path('remove-from-cart/<int:course_id>/', views.remove_from_cart, name='remove_from_cart'),
     path('course/<int:course_id>/learning-path/', views.learning_path, name='learning_path'),
     path('course/<int:course_id>/learning-path/', views.learning_path, name='course_learning_path'),
@@ -49,7 +60,9 @@ urlpatterns = [
     ), name='password_reset_complete'),
 
         # THÊM URL CHO LOGIN
-    path('login/', auth_views.LoginView.as_view(template_name='account/login.html'), name='login'),
+    # Redirect plain /login/ to allauth's login to ensure the expected
+    # `login` field in the template is handled correctly by allauth.
+    path('login/', RedirectView.as_view(url='/accounts/login/'), name='login'),
     
     # URLs reset password
     path('password-reset/', auth_views.PasswordResetView.as_view(

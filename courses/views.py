@@ -17,15 +17,41 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from .models import Contact
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound
+from django.shortcuts import redirect
+from django.contrib.auth import login as auth_login, get_user_model
+import os
+from allauth.account.models import EmailConfirmation
+from django.conf import settings
 
 def home(request):
     category = request.GET.get('category', '')
-    
-    # Lấy danh sách khóa học
+    sort = request.GET.get('sort', 'newest')
+
+    # Lấy danh sách khóa học với annotate cho các meta cần thiết
+    courses = Course.objects.all().annotate(
+        enrollment_count=Count('payment', filter=Q(payment__status='completed')),
+        average_rating=Avg('review__rating')
+    )
     if category:
-        courses = Course.objects.filter(category=category)
+        courses = courses.filter(category=category)
+
+    # Áp dụng sắp xếp
+    if sort == 'popular':
+        courses = courses.order_by('-enrollment_count', '-created_at')
+    elif sort == 'price_asc':
+        courses = courses.order_by('price')
+    elif sort == 'price_desc':
+        courses = courses.order_by('-price')
+    elif sort == 'rating':
+        courses = courses.order_by('-average_rating', '-created_at')
     else:
-        courses = Course.objects.all()
+        courses = courses.order_by('-created_at')
+    # Paginate courses (9 per page)
+    from django.core.paginator import Paginator
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(courses, 9)
+    courses = paginator.get_page(page_number)
     
     # Đếm số khóa học theo danh mục
     category_counts = {
@@ -38,11 +64,12 @@ def home(request):
     
     # Danh sách danh mục cho template
     course_categories = Course.CATEGORY_CHOICES
-    
+
     return render(request, 'courses/course_list.html', {
         'courses': courses,
         'selected_category': category,
         'course_categories': course_categories,
+        'sort': sort,
         **category_counts  # Truyền tất cả counts vào template
     })
 
@@ -278,6 +305,76 @@ def handler404(request, exception):
 
 def handler500(request):
     return render(request, 'courses/500.html', status=500)
+
+
+def dev_login(request):
+    """Development-only helper: log in the `EMAIL_HOST_USER` account when visited with correct token.
+    Usage: /dev-login/?token=THE_TOKEN
+    Token should be set in .env as DEV_LOGIN_TOKEN. Only works when DEBUG=True.
+    """
+    if not settings.DEBUG:
+        return HttpResponseForbidden('Not allowed')
+    token = request.GET.get('token')
+    expected = os.environ.get('DEV_LOGIN_TOKEN')
+    if not expected or token != expected:
+        return HttpResponseForbidden('Invalid token')
+    user = get_user_model().objects.filter(email__iexact=settings.EMAIL_HOST_USER).first()
+    if not user:
+        return HttpResponseNotFound('User not found')
+    # When logging in programmatically, Django's login expects the user to
+    # have a 'backend' attribute. Set it to the first configured backend.
+    backend = None
+    try:
+        backend = settings.AUTHENTICATION_BACKENDS[0]
+    except Exception:
+        backend = 'django.contrib.auth.backends.ModelBackend'
+    setattr(user, 'backend', backend)
+    auth_login(request, user)
+    return redirect('/')
+
+
+def dev_confirm_and_login(request, key=None):
+    """Development-only helper: confirm an EmailConfirmation by key and log the user in.
+    Usage: /dev-confirm/<key>/
+    Only works when `DEBUG=True`.
+    This is a dev helper to allow end-to-end testing of email confirmation + auto-login.
+    """
+    # Only allow dev confirm when DEBUG + explicit env flag enabled
+    if not (getattr(settings, 'DEBUG', False) and getattr(settings, 'DEV_AUTO_LOGIN_ON_CONFIRM', False)):
+        return HttpResponseForbidden('Not allowed')
+    if key is None:
+        key = request.GET.get('key') or request.GET.get('token')
+    if not key:
+        return HttpResponseNotFound('No key provided')
+
+    # Some allauth versions use keyed lookup differently; query directly by key
+    from allauth.account.models import EmailConfirmation as _EC
+    conf = _EC.objects.filter(key=key).first()
+    if not conf:
+        return HttpResponseNotFound('Confirmation not found')
+
+    # Ensure sent timestamp exists so allauth treats it as valid
+    if not conf.sent:
+        conf.sent = timezone.now()
+        conf.save()
+
+    try:
+        # Confirm via allauth (requires request)
+        conf.confirm(request)
+    except Exception:
+        # Fallback: mark the email verified directly
+        conf.email_address.verified = True
+        conf.email_address.save()
+
+    user = conf.email_address.user
+    backend = None
+    try:
+        backend = settings.AUTHENTICATION_BACKENDS[0]
+    except Exception:
+        backend = 'django.contrib.auth.backends.ModelBackend'
+    setattr(user, 'backend', backend)
+    auth_login(request, user)
+    return redirect('/my-dashboard/')
 
 # Trang Contact với form và gửi email
 def contact(request):
@@ -555,11 +652,12 @@ def submit_review(request, course_id):
 
 from .models import ForumPost, PostLike, PostComment
 from django.http import JsonResponse
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F
 # Danh sách bài viết diễn đàn với tìm kiếm và lọc tags
 def forum_list(request):
     search_query = request.GET.get('q', '')
     tag_filter = request.GET.get('tag', '')
+    sort = request.GET.get('sort', 'new')
     
     posts = ForumPost.objects.annotate(
         like_count=Count('postlike'),
@@ -575,17 +673,137 @@ def forum_list(request):
     
     if tag_filter:
         posts = posts.filter(tags__icontains=tag_filter)
+
+    # Sorting: new (latest), popular (most likes), comments (most commented)
+    if sort == 'popular':
+        posts = posts.order_by('-like_count', '-created_at')
+    elif sort == 'comments':
+        posts = posts.order_by('-comment_count', '-created_at')
+    else:
+        posts = posts.order_by('-created_at')
     
     # Lấy danh sách tags phổ biến
     popular_tags = ForumPost.objects.exclude(tags__isnull=True).exclude(tags__exact='')\
         .values_list('tags', flat=True)
     
+    # Community stats for hero
+    total_posts = ForumPost.objects.count()
+    total_comments = PostComment.objects.count()
+    active_users = User.objects.count()
+
     return render(request, 'courses/forum_list.html', {
         'posts': posts,
         'search_query': search_query,
         'tag_filter': tag_filter,
+        'popular_tags': popular_tags,
+        'sort': sort,
+        'total_posts': total_posts,
+        'total_comments': total_comments,
+        'active_users': active_users
+    })
+
+
+def forum_tag(request, tag):
+    posts = ForumPost.objects.annotate(
+        like_count=Count('postlike'),
+        comment_count=Count('comments')
+    ).filter(tags__icontains=tag)
+
+    popular_tags = ForumPost.objects.exclude(tags__isnull=True).exclude(tags__exact='')\
+        .values_list('tags', flat=True)
+
+    return render(request, 'courses/forum_list.html', {
+        'posts': posts,
+        'search_query': '',
+        'tag_filter': tag,
         'popular_tags': popular_tags
     })
+
+
+def recent_activity(request):
+    """Return recent activity (posts and comments) as JSON for polling updates."""
+    # Get recent posts and comments
+    recent_posts = list(ForumPost.objects.all().order_by('-created_at')[:10].values(
+        'id', 'author__username', 'title', 'created_at'))
+    recent_comments = list(PostComment.objects.all().order_by('-created_at')[:10].values(
+        'id', 'author__username', 'post_id', 'content', 'created_at'))
+
+    # Normalize and merge
+    events = []
+    for p in recent_posts:
+        events.append({
+            'type': 'post',
+            'id': p['id'],
+            'user': p['author__username'],
+            'title': p['title'],
+            'created_at': p['created_at'].isoformat()
+        })
+    for c in recent_comments:
+        events.append({
+            'type': 'comment',
+            'id': c['id'],
+            'user': c['author__username'],
+            'post_id': c['post_id'],
+            'content': c['content'][:140],
+            'created_at': c['created_at'].isoformat()
+        })
+
+    # Sort by created_at desc and limit
+    events_sorted = sorted(events, key=lambda e: e['created_at'], reverse=True)[:10]
+
+    return JsonResponse({'events': events_sorted})
+
+
+def user_profile(request, username):
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    user = get_object_or_404(User, username=username)
+
+    # User stats
+    posts = ForumPost.objects.filter(author=user).annotate(
+        like_count=Count('postlike'),
+        comment_count=Count('comments')
+    ).order_by('-created_at')
+
+    author_posts_count = posts.count()
+    author_comments_count = PostComment.objects.filter(author=user).count()
+
+    return render(request, 'courses/user_profile.html', {
+        'profile_user': user,
+        'posts': posts,
+        'author_posts_count': author_posts_count,
+        'author_comments_count': author_comments_count
+    })
+
+
+@login_required
+def forum_toggle_pin(request, post_id):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    post = get_object_or_404(ForumPost, id=post_id)
+    if not request.user.is_staff:
+        return HttpResponse(status=403)
+
+    post.is_pinned = not bool(post.is_pinned)
+    post.save()
+    messages.success(request, 'Đã cập nhật trạng thái ghim bài viết.')
+    return redirect('forum_detail', post_id=post.id)
+
+
+@login_required
+def forum_toggle_feature(request, post_id):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    post = get_object_or_404(ForumPost, id=post_id)
+    if not request.user.is_staff:
+        return HttpResponse(status=403)
+
+    post.is_featured = not bool(post.is_featured)
+    post.save()
+    messages.success(request, 'Đã cập nhật trạng thái nổi bật của bài viết.')
+    return redirect('forum_detail', post_id=post.id)
 
 @login_required
 def forum_create(request):
@@ -619,12 +837,56 @@ def forum_detail(request, post_id):
     user_has_liked = False
     if request.user.is_authenticated:
         user_has_liked = PostLike.objects.filter(user=request.user, post=post).exists()
-    
+
+    # Tăng lượt xem (atomic) và tính các thông số động
+    ForumPost.objects.filter(id=post.id).update(views=F('views') + 1)
+    post.refresh_from_db(fields=['views'])
+
+    # Paginate comments for the post (used by template's load-more)
+    from django.core.paginator import Paginator
+    comments_qs = post.comments.all().order_by('created_at')
+    page_number = request.GET.get('cpage', 1)
+    paginator = Paginator(comments_qs, 5)
+    comments_page = paginator.get_page(page_number)
+
+    # Tổng số bình luận cho post (toàn bộ, không phải page)
+    post_total_comments = comments_qs.count()
+
+    # Ước lượng thời gian đọc (phút) dựa trên từ (khoảng 200 wpm)
+    words = 0
+    if post.content:
+        words = len(post.content.split())
+    reading_time = max(1, (words + 199) // 200)
+
+    # Author stats
+    author = post.author
+    author_posts_count = ForumPost.objects.filter(author=author).count()
+    author_comments_count = PostComment.objects.filter(author=author).count()
+
+    # Related posts (simple heuristic: other posts ordered by comment & like)
+    related_posts = ForumPost.objects.annotate(
+        like_count=Count('postlike'),
+        comment_count=Count('comments')
+    ).exclude(id=post.id).order_by('-comment_count', '-like_count')[:5]
+
+    # Community statistics (global)
+    total_posts = ForumPost.objects.count()
+    total_comments = PostComment.objects.count()
+    total_users = User.objects.count()
+
     return render(request, 'courses/forum_detail.html', {
         'post': post,
-        'comments': post.comments.all(),
+        'comments': comments_page,
         'user_has_liked': user_has_liked,
-        'like_count': post.like_count
+        'like_count': post.like_count,
+        'post_total_comments': post_total_comments,
+        'total_posts': total_posts,
+        'total_comments': total_comments,
+        'total_users': total_users,
+        'reading_time': reading_time,
+        'author_posts_count': author_posts_count,
+        'author_comments_count': author_comments_count,
+        'related_posts': related_posts
     })
 
 @login_required
@@ -697,7 +959,15 @@ def remove_from_cart(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     cart_item = get_object_or_404(Cart, user=request.user, course=course)
     cart_item.delete()
-    
+    # Nếu là AJAX request trả về JSON, ngược lại redirect như trước
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return JsonResponse({
+            'success': True,
+            'message': f'Đã xóa "{course.title}" khỏi giỏ hàng!',
+            'cart_count': Cart.objects.filter(user=request.user).count()
+        })
+
     messages.success(request, f'Đã xóa "{course.title}" khỏi giỏ hàng!')
     return redirect('view_cart')
 
@@ -708,6 +978,20 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Avg, Count, Sum
 from .models import Course, Payment, Review, LearningPath, WeeklySchedule, DailyTask
+
+@login_required
+def forum_delete(request, post_id):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    post = get_object_or_404(ForumPost, id=post_id)
+    # Allow only author or staff to delete
+    if not (request.user == post.author or request.user.is_staff):
+        return HttpResponseForbidden('Không có quyền xoá bài viết này')
+
+    post.delete()
+    messages.success(request, 'Đã xoá bài viết.')
+    return redirect('forum_list')
 
 @login_required
 def learning_path(request, course_id):
