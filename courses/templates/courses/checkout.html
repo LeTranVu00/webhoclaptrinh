@@ -1,5 +1,5 @@
 {% extends 'courses/base.html' %}
-{% load static %}
+{% load static vn_filters %}
 
 {% block content %}
 <!-- Checkout Page -->
@@ -65,8 +65,8 @@
                                 <div class="item-title">{{ item.course.title }}</div>
                                 <div class="item-category">{{ item.course.get_category_display }}</div>
                             </div>
-                            <div class="item-price">
-                                <span class="price-amount">{{ item.course.price|floatformat:0 }}</span>
+                                <div class="item-price">
+                                <span class="price-amount">{{ item.course.price|vn_thousand }}</span>
                                 <span class="price-currency">VNĐ</span>
                             </div>
                         </div>
@@ -77,7 +77,7 @@
                     <div class="order-totals">
                         <div class="total-row">
                             <span class="label">Tạm tính</span>
-                            <span class="value">{{ subtotal|floatformat:0 }} VNĐ</span>
+                            <span class="value">{{ subtotal|vn_thousand }} VNĐ</span>
                         </div>
                         <div class="total-row discount">
                             <span class="label">Giảm giá</span>
@@ -85,7 +85,7 @@
                         </div>
                         <div class="total-row grand-total">
                             <span class="label">Tổng cộng</span>
-                            <span class="value">{{ total_amount|floatformat:0 }} VNĐ</span>
+                            <span class="value">{{ total_amount|vn_thousand }} VNĐ</span>
                         </div>
                     </div>
                 </div>
@@ -169,7 +169,7 @@
                                             <li>Mở ứng dụng MoMo trên điện thoại</li>
                                             <li>Chọn chức năng "Quét mã QR"</li>
                                             <li>Quét mã QR bên cạnh</li>
-                                            <li>Xác nhận thanh toán {{ total_amount|floatformat:0 }} VNĐ</li>
+                                            <li>Xác nhận thanh toán {{ total_amount|vn_thousand }} VNĐ</li>
                                         </ol>
                                         <div class="qr-note">
                                             <span>💡</span>
@@ -204,7 +204,7 @@
                                         </div>
                                         <div class="bank-detail">
                                             <span class="detail-label">Số tiền:</span>
-                                            <span class="detail-value highlight">{{ total_amount|floatformat:0 }} VNĐ</span>
+                                            <span class="detail-value highlight">{{ total_amount|vn_thousand }} VNĐ</span>
                                         </div>
                                         <div class="bank-detail">
                                             <span class="detail-label">Nội dung:</span>
@@ -272,9 +272,8 @@
                             <button type="submit" class="btn-payment">
                                 <span class="btn-icon">💳</span>
                                 <span class="btn-text">Xác nhận thanh toán</span>
-                                <span class="btn-amount">{{ total_amount|floatformat:0 }} VNĐ</span>
-                            </button>
-                            
+                                <span class="btn-amount">{{ total_amount|vn_thousand }} VNĐ</span>
+                            </button>                       
                             <div class="payment-security">
                                 <div class="security-item">
                                     <span>🔒</span>
@@ -1175,16 +1174,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const paymentCoursePath = "{% url 'payment_course' %}";
+        console.log('paymentCoursePath:', paymentCoursePath);
     // Payment method selection
     const paymentMethods = document.querySelectorAll('.payment-method');
     const paymentDetails = document.querySelectorAll('.payment-detail');
-    
-    // Auto-select first payment method
-    if (paymentMethods.length > 0) {
-        paymentMethods[0].querySelector('input').checked = true;
-        paymentMethods[0].querySelector('input').dispatchEvent(new Event('change'));
-    }
-    
+
     paymentMethods.forEach(method => {
         const input = method.querySelector('input');
         const methodName = method.dataset.method;
@@ -1202,6 +1198,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (selectedDetail) {
                     selectedDetail.classList.add('active');
                     selectedDetail.style.display = 'block';
+                    // Disable inputs in all payment details first, then enable only for selected
+                    paymentDetails.forEach(detail => {
+                        const controls = detail.querySelectorAll('input, select, textarea, button');
+                        controls.forEach(c => c.disabled = true);
+                    });
+                    const selectedControls = selectedDetail.querySelectorAll('input, select, textarea, button');
+                    selectedControls.forEach(c => c.disabled = false);
+
+                    // Ensure required only for COD fields
+                    const phone = document.querySelector('input[name="phone_number"]');
+                    const terms = document.querySelector('input[name="cod_terms"]');
+                    if (phone) phone.required = (methodName === 'cod');
+                    if (terms) terms.required = (methodName === 'cod');
+                }
+
+                // Update fallback link when payment method changes
+                const fallbackLink = document.getElementById('payment-redirect-link');
+                if (fallbackLink) {
+                    if (methodName === 'momo' || methodName === 'banking') {
+                        let redirectUrl = paymentCoursePath || '/payment-course/';
+                        const sep = redirectUrl.includes('?') ? '&' : '?';
+                        redirectUrl = `${redirectUrl}${sep}method=${encodeURIComponent(methodName)}`;
+                        fallbackLink.href = redirectUrl;
+                        fallbackLink.style.display = 'inline-block';
+                    } else {
+                        fallbackLink.style.display = 'none';
+                    }
                 }
                 
                 // Update active state
@@ -1212,6 +1235,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Auto-select first payment method AFTER listeners are attached
+    if (paymentMethods.length > 0) {
+        const firstInput = paymentMethods[0].querySelector('input');
+        if (firstInput) {
+            firstInput.checked = true;
+            firstInput.dispatchEvent(new Event('change'));
+        }
+    }
     
     // Form validation
     const form = document.getElementById('payment-form');
@@ -1250,7 +1282,35 @@ document.addEventListener('DOMContentLoaded', function() {
             <span>Đang xử lý thanh toán...</span>
         `;
         
-        // Simulate payment processing
+        // For MoMo or Banking: redirect to payment instruction page (GET)
+        if (selectedMethod.value === 'momo' || selectedMethod.value === 'banking') {
+            // Build a safe redirect URL (works with absolute or relative path)
+            try {
+                let redirectUrl = paymentCoursePath || '/payment-course/';
+                // Ensure there is not already a query string
+                const sep = redirectUrl.includes('?') ? '&' : '?';
+                redirectUrl = `${redirectUrl}${sep}method=${encodeURIComponent(selectedMethod.value)}`;
+                console.log('Redirecting to payment instructions:', redirectUrl);
+
+                // Small delay to show loading state then redirect
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 500);
+                return;
+            } catch (err) {
+                console.error('Redirect failed (fallback):', err);
+                alert('Không thể điều hướng tới trang hướng dẫn thanh toán. Vui lòng thử lại.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `
+                    <span class="btn-icon">💳</span>
+                    <span class="btn-text">Xác nhận thanh toán</span>
+                    <span class="btn-amount">{{ total_amount|floatformat:0 }} VNĐ</span>
+                `;
+                return;
+            }
+        }
+
+        // Simulate payment processing for other methods (COD)
         setTimeout(() => {
             // In real app, submit the form
             form.submit();
@@ -1279,6 +1339,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 breadcrumb.classList.remove('sticky');
             }
         });
+    }
+    } catch (err) {
+        console.error('Checkout script error:', err);
     }
 });
 

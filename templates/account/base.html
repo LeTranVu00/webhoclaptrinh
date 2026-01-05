@@ -3,23 +3,38 @@
 <head>
     <title>{% block title %}Đăng nhập{% endblock %}</title>
     <style>
-        body { font-family: Arial; background: #f4f4f4; padding: 20px; }
+        /* CSS CƠ BẢN CHO BASE - CHỈ ĐỊNH DẠNG CHUNG */
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f4f4f4; 
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .auth-box { 
             background: white; 
             padding: 30px; 
             border-radius: 10px; 
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            max-width: 400px;
-            margin: 50px auto;
+            width: 100%; /* Đổi từ max-width thành width */
+            max-width: 400px; /* Giữ giới hạn mặc định */
+            margin: 20px auto; /* Giảm margin trên dưới */
+            box-sizing: border-box;
         }
+        /* CSS cho các form cơ bản - CÓ THỂ BỎ NẾU TRANG CON TỰ ĐỊNH NGHĨA */
+        {% block base_form_styles %}
         input[type="text"], input[type="password"], input[type="email"] {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
+            box-sizing: border-box;
         }
-        button {
+        button, .btn-primary {
             background: #2c3e50;
             color: white;
             padding: 10px 20px;
@@ -27,13 +42,19 @@
             border-radius: 5px;
             cursor: pointer;
             width: 100%;
+            font-size: 16px;
         }
+        {% endblock %}
     </style>
+    <!-- BLOCK để các trang con chèn CSS RIÊNG của chúng -->
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="auth-box">
         {% block content %}
         {% endblock %}
     </div>
+    <!-- BLOCK để các trang con chèn JS RIÊNG của chúng -->
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

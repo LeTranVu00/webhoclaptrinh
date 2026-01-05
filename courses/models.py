@@ -193,6 +193,7 @@ class DailyTask(models.Model):
     description = models.TextField(verbose_name="Mô tả công việc")
     duration_minutes = models.IntegerField(default=60, verbose_name="Thời gian (phút)")
     resources = models.TextField(blank=True, verbose_name="Tài liệu tham khảo")
+    attachment = models.FileField(upload_to='resources/', blank=True, null=True, verbose_name="Tập tin đính kèm")
     is_completed = models.BooleanField(default=False, verbose_name="Hoàn thành")
     
     class Meta:
@@ -200,3 +201,25 @@ class DailyTask(models.Model):
     
     def __str__(self):
         return f"Day {self.day_number}: {self.title}"
+
+
+# Model để gán lộ trình cho học viên (admin có thể thêm)
+class LearningPathEnrollment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='learning_path_enrollments')
+    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE, related_name='enrollments')
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_learning_paths')
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Active'),
+        ('completed', 'Completed'),
+        ('inactive', 'Inactive')
+    ], default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'learning_path')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.learning_path.course.title} ({self.status})"

@@ -53,6 +53,7 @@ class PostCommentAdmin(admin.ModelAdmin):
 
 
 from .models import LearningPath, WeeklySchedule, DailyTask
+from .models import LearningPathEnrollment
 # Đăng ký model LearningPath, WeeklySchedule, DailyTask với admin
 class DailyTaskInline(admin.TabularInline):
     model = DailyTask
@@ -77,9 +78,33 @@ class WeeklyScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(DailyTask)
 class DailyTaskAdmin(admin.ModelAdmin):
-    list_display = ['weekly_schedule', 'day_number', 'title', 'duration_minutes', 'is_completed']
+    list_display = ['weekly_schedule', 'day_number', 'title', 'duration_minutes', 'is_completed', 'attachment_link']
     list_filter = ['weekly_schedule', 'is_completed']
     list_editable = ['is_completed']
+    readonly_fields = ['attachment_preview']
+    fields = ('weekly_schedule', 'day_number', 'title', 'description', 'duration_minutes', 'resources', 'attachment', 'attachment_preview', 'is_completed')
+
+    def attachment_link(self, obj):
+        if obj.attachment:
+            return f"<a href='{obj.attachment.url}' target='_blank'>Tải</a>"
+        return ''
+    attachment_link.allow_tags = True
+    attachment_link.short_description = 'Tệp'
+
+    def attachment_preview(self, obj):
+        if obj.attachment:
+            return f"<a href='{obj.attachment.url}' target='_blank'>{obj.attachment.name}</a>"
+        return '(Không có)'
+    attachment_preview.allow_tags = True
+    attachment_preview.short_description = 'Tệp đính kèm'
+
+
+@admin.register(LearningPathEnrollment)
+class LearningPathEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ['user', 'learning_path', 'status', 'start_date', 'end_date', 'assigned_by', 'created_at']
+    list_filter = ['status', 'start_date']
+    search_fields = ['user__username', 'learning_path__course__title', 'assigned_by__username']
+    readonly_fields = ['created_at']
 
 
 # Đăng ký model Course với admin

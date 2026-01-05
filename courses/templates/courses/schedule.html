@@ -1,0 +1,1398 @@
+{% extends 'courses/base.html' %}
+{% load vn_filters %}
+{% block content %}
+<!-- Breadcrumb Section -->
+<div class="breadcrumb-optimized" id="breadcrumb">
+    <div class="container">
+        <div class="schedule-breadcrumb">
+            <a href="/" class="crumb">
+                <span>🏠</span>
+                <span>Trang chủ</span>
+            </a>
+            <div class="crumb-separator">›</div>
+            <a href="{% url 'my_courses' %}" class="crumb">
+                <span>📚</span>
+                <span>Khóa học của tôi</span>
+            </a>
+            <div class="crumb-separator">›</div>
+            <div class="crumb current">
+                <span>📅</span>
+                <span>Lịch học</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="schedule-container" id="schedule-content">
+  <div class="schedule-wrapper">
+    <div class="schedule-header">
+      <div class="course-info">
+        <h1>{{ enrollment.learning_path.course.title }}</h1>
+        <div class="course-meta">
+          <div class="meta-item">
+            <span class="meta-icon">📅</span>
+            <span>Bắt đầu: <strong>{{ enrollment.start_date|date:"d/m/Y"|default:'Chưa có' }}</strong></span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-icon">⏳</span>
+            <span>Tiến độ: <strong>{{ progress_percentage|default:0 }}%</strong></span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-icon">📊</span>
+            <span>Thời lượng: <strong>{{ total_weeks|default:'0' }} tuần</strong></span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="schedule-actions">
+        <a href="{% url 'my_courses' %}" class="btn-back">
+          <span>←</span>
+          <span>Quay lại khóa học</span>
+        </a>
+        <button class="btn-print" onclick="window.print()">
+          <span>🖨️</span>
+          <span>In lịch học</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span>📈 Tiến độ học tập</span>
+        <span class="progress-percentage">{{ progress_percentage|default:0 }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ progress_percentage|default:0 }}%"></div>
+      </div>
+      <div class="progress-stats">
+        <span class="stat">Đã hoàn thành: {{ completed_days|default:0 }}/{{ total_days|default:0 }} ngày</span>
+        <span class="stat">Tuần hiện tại: {{ current_week|default:1 }}/{{ total_weeks|default:1 }}</span>
+      </div>
+    </div>
+
+    <!-- Calendar Navigation -->
+    <div class="calendar-nav">
+      <div class="nav-controls">
+        <button class="nav-btn prev-btn" onclick="scrollCalendar(-1)">
+          <span>←</span>
+          <span>Tuần trước</span>
+        </button>
+        <div class="nav-current">
+          <span class="nav-icon">📅</span>
+          <span class="nav-text">Lịch học theo ngày</span>
+        </div>
+        <button class="nav-btn next-btn" onclick="scrollCalendar(1)">
+          <span>Tuần sau</span>
+          <span>→</span>
+        </button>
+      </div>
+      <div class="week-filter">
+        <button class="filter-btn active" data-week="all">Tất cả tuần</button>
+        {% for week_num in week_range %}
+        <button class="filter-btn" data-week="{{ week_num }}">Tuần {{ week_num }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Calendar List -->
+    <div class="calendar-list" id="calendar-list">
+      {% if schedule.items %}
+        {% for date, tasks in schedule.items %}
+          <div class="day-card" id="day-{{ forloop.counter0 }}" data-date="{{ date }}">
+            <div class="day-header">
+              <div class="date-info">
+                <span class="day-date">{{ date }}</span>
+                {% with first_task=tasks.0 %}
+                  {% if first_task %}
+                    <span class="week-tag">Tuần {{ first_task.week_number }}</span>
+                  {% endif %}
+                {% endwith %}
+              </div>
+              <div class="day-status">
+                {% if date in completed_dates %}
+                <span class="status-badge completed">✅ Đã hoàn thành</span>
+                {% else %}
+                <span class="status-badge pending">⏳ Chưa học</span>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="day-content">
+              {% for t in tasks %}
+                <div class="task-item" data-week="{{ t.week_number }}">
+                  <div class="task-header">
+                    <div class="task-meta">
+                      <span class="task-week">Tuần {{ t.week_number }} - Ngày {{ t.day_number }}</span>
+                      <span class="task-duration">⏱️ 2 giờ học</span>
+                    </div>
+                    {% if t.is_current %}
+                    <span class="current-badge">Hôm nay</span>
+                    {% endif %}
+                  </div>
+                  
+                  <h4 class="task-title">{{ t.title }}</h4>
+                  <p class="task-desc">{{ t.description }}</p>
+                  
+                  {% if t.title %}
+                    {% with week_number=t.week_number day_number=t.day_number %}
+                      {% for ws in enrollment.learning_path.weeks.all %}
+                        {% if ws.week_number == week_number %}
+                          {% for day in ws.days.all %}
+                            {% if day.day_number == day_number %}
+                              <div class="task-resources">
+                                <div class="resources-header">
+                                  <span class="resources-icon">📚</span>
+                                  <span class="resources-title">Tài liệu học tập</span>
+                                </div>
+                                
+                                {% with url=day.resources|resource_url embed=day.resources|resource_embed %}
+                                  {% if embed %}
+                                    <div class="video-resource">
+                                      <div class="video-preview">
+                                        <div class="video-wrap">
+                                          <iframe width="560" height="315" src="{{ embed }}" 
+                                                  frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                                  allowfullscreen loading="lazy">
+                                          </iframe>
+                                        </div>
+                                      </div>
+                                      <a href="{{ embed }}" class="video-link" target="_blank">
+                                        <span>▶️</span>
+                                        <span>Xem video trên YouTube</span>
+                                      </a>
+                                    </div>
+                                  {% endif %}
+                                  
+                                  {% if url %}
+                                    <div class="resource-link">
+                                      <span class="link-icon">🔗</span>
+                                      <a href="{{ url }}" target="_blank" class="external-link">
+                                        {{ url|truncatechars:50 }}
+                                      </a>
+                                      <button class="copy-link" data-url="{{ url }}">
+                                        <span>📋</span>
+                                      </button>
+                                    </div>
+                                  {% endif %}
+                                  
+                                  {% if day.attachment %}
+                                    <div class="attachment-resource">
+                                      <span class="attachment-icon">📎</span>
+                                      <div class="attachment-info">
+                                        <span class="attachment-name">{{ day.attachment.name|slice:"20:" }}</span>
+                                        <span class="attachment-size">{{ day.attachment.size|filesizeformat }}</span>
+                                      </div>
+                                      <a href="{{ day.attachment.url }}" class="download-btn" target="_blank" download>
+                                        <span>⬇️</span>
+                                        <span>Tải xuống</span>
+                                      </a>
+                                    </div>
+                                  {% endif %}
+                                  
+                                  {% if not embed and not url and not day.attachment %}
+                                    <div class="no-resources">
+                                      <span class="no-res-icon">📝</span>
+                                      <span class="no-res-text">Không có tài liệu đính kèm</span>
+                                    </div>
+                                  {% endif %}
+                                {% endwith %}
+                              </div>
+                            {% endif %}
+                          {% endfor %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  {% endif %}
+                  
+                  <div class="task-actions">
+                    <button class="btn-mark-complete" data-date="{{ date }}" data-task-id="{{ t.id|default:'' }}">
+                      <span>✅</span>
+                      <span>Đánh dấu hoàn thành</span>
+                    </button>
+                    <button class="btn-add-note" data-date="{{ date }}">
+                      <span>📝</span>
+                      <span>Thêm ghi chú</span>
+                    </button>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            
+            <div class="day-footer">
+              <div class="day-total">
+                <span class="total-icon">📊</span>
+                <span>{{ tasks|length }} bài học</span>
+              </div>
+              <a href="#day-{{ forloop.counter0 }}" class="day-link" onclick="scrollToDay({{ forloop.counter0 }})">
+                <span>🔗</span>
+                <span>Liên kết trực tiếp</span>
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-schedule">
+          <div class="empty-icon">📅</div>
+          <h3>Chưa có lịch học</h3>
+          <p>Lịch học sẽ được cập nhật sau khi bạn bắt đầu khóa học</p>
+          <a href="{% url 'course_detail' enrollment.learning_path.course.id %}" class="btn-start">
+            <span>🚀</span>
+            <span>Bắt đầu học</span>
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Navigation -->
+    <div class="quick-nav">
+      <div class="nav-header">
+        <span>🔍 Điều hướng nhanh</span>
+      </div>
+      <div class="nav-days">
+        {% for date, tasks in schedule.items %}
+          <a href="#day-{{ forloop.counter0 }}" class="nav-day" onclick="scrollToDay({{ forloop.counter0 }})">
+            <span class="nav-day-date">{{ date|slice:"5:" }}</span>
+            <span class="nav-day-count">{{ tasks|length }} bài</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div id="notification" class="notification">
+  <div class="notification-content">
+    <span class="notification-icon">✅</span>
+    <span class="notification-text"></span>
+  </div>
+</div>
+
+<style>
+:root {
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-lg: 24px;
+  --transition: all 0.3s ease;
+}
+
+/* Breadcrumb */
+.breadcrumb-optimized {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  transition: var(--transition);
+}
+
+.breadcrumb-optimized.sticky {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 0.75rem 0;
+}
+
+.breadcrumb-optimized .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.schedule-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  background: white;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  transition: var(--transition);
+}
+
+.breadcrumb-optimized.sticky .schedule-breadcrumb {
+  padding: 0.5rem 1.25rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: var(--transition);
+}
+
+.crumb:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.crumb.current {
+  color: var(--text);
+  font-weight: 600;
+  cursor: default;
+  background: #f8fafc;
+}
+
+.crumb-separator {
+  color: var(--text-light);
+}
+
+/* Schedule Container */
+.schedule-container {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  min-height: calc(100vh - 80px);
+  padding: 40px 20px;
+  scroll-behavior: smooth;
+}
+
+.schedule-wrapper {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Header */
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.course-info h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 15px;
+  line-height: 1.2;
+}
+
+.course-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.meta-icon {
+  font-size: 1.1rem;
+}
+
+.meta-item strong {
+  color: var(--primary);
+}
+
+/* Schedule Actions */
+.schedule-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-back, .btn-print {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-back {
+  background: var(--card);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.btn-back:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-print {
+  background: var(--card);
+  color: var(--text);
+  border: 2px solid var(--border);
+}
+
+.btn-print:hover {
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+/* Progress Section */
+.progress-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.progress-percentage {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.progress-bar {
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success), #34d399);
+  border-radius: 6px;
+  transition: width 1s ease;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+
+/* Calendar Navigation */
+.calendar-nav {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+
+.nav-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.nav-btn:hover {
+  background: #f1f5f9;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.nav-current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.week-filter {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  color: var(--text);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.filter-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.filter-btn:hover:not(.active) {
+  background: #e2e8f0;
+  border-color: var(--border);
+}
+
+/* Day Card */
+.day-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  margin-bottom: 25px;
+  box-shadow: var(--shadow);
+  border: 2px solid transparent;
+  transition: var(--transition);
+  position: relative;
+  scroll-margin-top: 120px;
+}
+
+.day-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.day-card:target {
+  border-color: var(--primary);
+  animation: highlight 2s ease;
+}
+
+@keyframes highlight {
+  0% { border-color: var(--primary); }
+  50% { border-color: var(--success); }
+  100% { border-color: var(--primary); }
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 2px solid var(--border);
+  background: #f8fafc;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.date-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.day-date {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.week-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.day-status .status-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.status-badge.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Day Content */
+.day-content {
+  padding: 25px;
+}
+
+.task-item {
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  border-left: 4px solid var(--primary);
+}
+
+.task-item:last-child {
+  margin-bottom: 0;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.task-week {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+.task-duration {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.current-badge {
+  background: var(--warning);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.task-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.task-desc {
+  color: var(--text-light);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* Task Resources */
+.task-resources {
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.resources-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.resources-icon {
+  font-size: 1.2rem;
+}
+
+.resources-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.video-resource {
+  margin-bottom: 20px;
+}
+
+.video-preview {
+  margin-bottom: 15px;
+}
+
+.video-wrap {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000;
+}
+
+.video-wrap iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.video-link:hover {
+  background: #fecaca;
+  transform: translateY(-2px);
+}
+
+.resource-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.link-icon {
+  font-size: 1.2rem;
+}
+
+.external-link {
+  flex: 1;
+  color: var(--primary);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.external-link:hover {
+  text-decoration: underline;
+}
+
+.copy-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.copy-link:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.attachment-resource {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.attachment-icon {
+  font-size: 1.5rem;
+}
+
+.attachment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.attachment-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.attachment-size {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--success);
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.download-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.no-resources {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: var(--text-light);
+}
+
+/* Task Actions */
+.task-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-mark-complete, .btn-add-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-mark-complete {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid #10b981;
+}
+
+.btn-mark-complete:hover {
+  background: #10b981;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-add-note {
+  background: #fef3c7;
+  color: #92400e;
+  border: 2px solid #f59e0b;
+}
+
+.btn-add-note:hover {
+  background: #f59e0b;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Day Footer */
+.day-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-top: 2px solid var(--border);
+  background: #f8fafc;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.day-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.day-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--card);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.day-link:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Quick Navigation */
+.quick-nav {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 25px;
+  margin-top: 40px;
+  box-shadow: var(--shadow);
+  position: sticky;
+  bottom: 20px;
+  z-index: 100;
+}
+
+.nav-header {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.nav-days {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.nav-day {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 15px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+  transition: var(--transition);
+  min-width: 80px;
+}
+
+.nav-day:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.nav-day-date {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.nav-day-count {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* Empty State */
+.empty-schedule {
+  text-align: center;
+  padding: 60px 40px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.3;
+}
+
+.empty-schedule h3 {
+  font-size: 1.8rem;
+  color: var(--text);
+  margin-bottom: 15px;
+}
+
+.empty-schedule p {
+  color: var(--text-light);
+  margin-bottom: 30px;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-start {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 30px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: var(--transition);
+}
+
+.btn-start:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Notification */
+.notification {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+  border-left: 5px solid var(--success);
+  transform: translateX(120%);
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  max-width: 400px;
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.notification-icon {
+  font-size: 1.5rem;
+}
+
+.notification-text {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .schedule-header {
+    flex-direction: column;
+  }
+  
+  .course-info h1 {
+    font-size: 1.8rem;
+  }
+  
+  .course-meta {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .schedule-actions {
+    width: 100%;
+  }
+  
+  .btn-back, .btn-print {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .day-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .task-actions {
+    flex-direction: column;
+  }
+  
+  .video-wrap iframe {
+    height: 200px;
+  }
+  
+  /* Responsive breadcrumb */
+  .schedule-breadcrumb {
+    padding: 0.75rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .crumb span:last-child {
+    display: none;
+  }
+  
+  .crumb {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-container {
+    padding: 20px 15px;
+  }
+  
+  .calendar-nav {
+    padding: 15px;
+  }
+  
+  .nav-controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .week-filter {
+    justify-content: center;
+  }
+  
+  .day-content, .task-resources {
+    padding: 15px;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sticky breadcrumb effect
+    const breadcrumb = document.getElementById('breadcrumb');
+    if (breadcrumb) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 50) {
+                breadcrumb.classList.add('sticky');
+            } else {
+                breadcrumb.classList.remove('sticky');
+            }
+        });
+    }
+
+    // Scroll to specific day with offset for breadcrumb
+    window.scrollToDay = function(dayIndex) {
+        const dayCard = document.getElementById(`day-${dayIndex}`);
+        if (dayCard) {
+            const breadcrumbHeight = document.querySelector('.breadcrumb-optimized').offsetHeight;
+            const offset = 20; // Additional offset
+            const targetPosition = dayCard.offsetTop - breadcrumbHeight - offset;
+            
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            });
+            
+            // Add highlight effect
+            dayCard.classList.add('highlight');
+            setTimeout(() => {
+                dayCard.classList.remove('highlight');
+            }, 2000);
+        }
+        return false; // Prevent default anchor behavior
+    };
+
+    // Filter by week
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const taskItems = document.querySelectorAll('.task-item');
+    
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const week = this.getAttribute('data-week');
+            
+            // Update active button
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter tasks
+            taskItems.forEach(task => {
+                const taskWeek = task.getAttribute('data-week');
+                if (week === 'all' || taskWeek === week) {
+                    task.style.display = 'block';
+                } else {
+                    task.style.display = 'none';
+                }
+            });
+            
+            // Show notification
+            if (week !== 'all') {
+                showNotification(`Đang hiển thị Tuần ${week}`);
+            } else {
+                showNotification('Hiển thị tất cả tuần');
+            }
+        });
+    });
+
+    // Copy link functionality
+    const copyButtons = document.querySelectorAll('.copy-link');
+    copyButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            navigator.clipboard?.writeText(url).then(() => {
+                showNotification('Đã sao chép liên kết');
+            });
+        });
+    });
+
+    // Mark as complete
+    const completeButtons = document.querySelectorAll('.btn-mark-complete');
+    completeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const date = this.getAttribute('data-date');
+            const badge = this.closest('.day-card').querySelector('.status-badge');
+            
+            // Update UI
+            badge.textContent = '✅ Đã hoàn thành';
+            badge.className = 'status-badge completed';
+            this.disabled = true;
+            this.innerHTML = '<span>✅</span><span>Đã hoàn thành</span>';
+            
+            showNotification(`Đã đánh dấu ngày ${date} hoàn thành`);
+            
+            // Simulate API call
+            setTimeout(() => {
+                // Update progress bar
+                updateProgress();
+            }, 500);
+        });
+    });
+
+    // Add note
+    const noteButtons = document.querySelectorAll('.btn-add-note');
+    noteButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const date = this.getAttribute('data-date');
+            const note = prompt(`Thêm ghi chú cho ngày ${date}:`, '');
+            if (note) {
+                showNotification('Đã thêm ghi chú thành công');
+            }
+        });
+    });
+
+    // Calendar navigation
+    window.scrollCalendar = function(direction) {
+        const dayCards = document.querySelectorAll('.day-card');
+        const currentScroll = window.scrollY;
+        const windowHeight = window.innerHeight;
+        
+        for (let i = 0; i < dayCards.length; i++) {
+            const card = dayCards[i];
+            if (card.offsetTop > currentScroll + 100) {
+                if (direction === 1) { // Next
+                    scrollToDay(i);
+                } else { // Previous
+                    if (i > 0) scrollToDay(i - 1);
+                }
+                break;
+            }
+        }
+    };
+
+    // Update progress bar
+    function updateProgress() {
+        const completedCards = document.querySelectorAll('.status-badge.completed').length;
+        const totalCards = document.querySelectorAll('.day-card').length;
+        const percentage = totalCards > 0 ? Math.round((completedCards / totalCards) * 100) : 0;
+        
+        const progressFill = document.querySelector('.progress-fill');
+        const progressPercentage = document.querySelector('.progress-percentage');
+        const progressStats = document.querySelector('.progress-stats .stat:first-child');
+        
+        if (progressFill) progressFill.style.width = percentage + '%';
+        if (progressPercentage) progressPercentage.textContent = percentage + '%';
+        if (progressStats) progressStats.textContent = `Đã hoàn thành: ${completedCards}/${totalCards} ngày`;
+    }
+
+    // Show notification
+    function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const text = notification.querySelector('.notification-text');
+        const icon = notification.querySelector('.notification-icon');
+        
+        text.textContent = message;
+        
+        if (type === 'error') {
+            notification.style.borderLeftColor = 'var(--danger)';
+            icon.textContent = '❌';
+        } else {
+            notification.style.borderLeftColor = 'var(--success)';
+            icon.textContent = '✅';
+        }
+        
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    // Initialize progress
+    updateProgress();
+
+    // Smooth scroll for all anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href !== '#') {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    const breadcrumbHeight = document.querySelector('.breadcrumb-optimized').offsetHeight;
+                    const offset = 20;
+                    const targetPosition = target.offsetTop - breadcrumbHeight - offset;
+                    
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

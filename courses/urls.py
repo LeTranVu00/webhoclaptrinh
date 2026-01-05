@@ -14,6 +14,9 @@ urlpatterns = [
     path('payment-success/', views.payment_success, name='payment_success'),
     path('checkout-direct/<int:course_id>/', views.checkout_direct, name='checkout_direct'),
     path('generate-qr/<int:course_id>/', views.generate_qr_code, name='generate_qr'),
+    path('payment-course/', views.payment_course_view, name='payment_course'),
+    path('payment-confirm/', views.payment_confirm_view, name='payment_confirm'),
+    path('activate-payment/<str:token>/', views.activate_payment, name='activate_payment'),
     path('about/', views.about, name='about'),
     path('contact/', views.contact, name='contact'),
     # Development helper login (use only in DEBUG; requires DEV_LOGIN_TOKEN in .env)
@@ -39,6 +42,8 @@ urlpatterns = [
     path('course/<int:course_id>/learning-path/', views.learning_path, name='learning_path'),
     path('course/<int:course_id>/learning-path/', views.learning_path, name='course_learning_path'),
     path('toggle-task/<int:task_id>/', views.toggle_task_completion, name='toggle_task_completion'),
+    path('admin/learning-path-assign/', views.admin_learning_path_assign, name='admin_learning_path_assign'),
+    path('my-schedule/<int:enrollment_id>/', views.my_schedule, name='my_schedule'),
 
      # URLs reset password
     path('password-reset/', auth_views.PasswordResetView.as_view(

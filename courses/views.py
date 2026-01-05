@@ -23,6 +23,9 @@ from django.contrib.auth import login as auth_login, get_user_model
 import os
 from allauth.account.models import EmailConfirmation
 from django.conf import settings
+from .models import LearningPathEnrollment
+from django.core.signing import dumps, loads, BadSignature, SignatureExpired
+from django.urls import reverse
 
 def home(request):
     category = request.GET.get('category', '')
@@ -195,8 +198,16 @@ def checkout(request):
     
     if request.method == 'POST':
         payment_method = request.POST.get('payment_method')
-        
-        # Tạo các bản ghi thanh toán
+
+        # Nếu người dùng chọn MoMo hoặc chuyển khoản, hiển thị trang hướng dẫn thanh toán
+        if payment_method in ('momo', 'banking'):
+            return render(request, 'courses/payment_course.html', {
+                'cart_items': cart_items,
+                'total_amount': total_amount,
+                'payment_method': payment_method,
+            })
+
+        # Với COD hoặc các phương thức khác, thực hiện thanh toán ngay lập tức (hiện tại giữ logic cũ)
         for item in cart_items:
             Payment.objects.create(
                 user=request.user,
@@ -205,10 +216,10 @@ def checkout(request):
                 payment_method=payment_method,
                 status='completed'
             )
-        
+
         # Xóa giỏ hàng sau khi thanh toán
         cart_items.delete()
-        
+
         messages.success(request, 'Thanh toán thành công! Bạn đã sở hữu khóa học.')
         return redirect('my_courses')
     
@@ -245,6 +256,196 @@ def generate_qr_code(request, course_id):
     qr_base64 = base64.b64encode(buffer.getvalue()).decode()
     
     return JsonResponse({'qr_code': qr_base64})
+
+
+@login_required
+def payment_course_view(request):
+    """Render the payment instruction page for MoMo or banking via GET.
+    This allows client-side redirects (GET) to show the QR/info page reliably.
+    """
+    payment_method = request.GET.get('method')
+    cart_items = Cart.objects.filter(user=request.user)
+    if not cart_items.exists():
+        messages.warning(request, 'Giỏ hàng của bạn đang trống!')
+        return redirect('course_list')
+
+    total_amount = sum(item.course.price for item in cart_items)
+
+    return render(request, 'courses/payment_course.html', {
+        'cart_items': cart_items,
+        'total_amount': total_amount,
+        'payment_method': payment_method,
+    })
+
+
+@login_required
+def payment_confirm_view(request):
+    """Handle user-confirmed payments from the `payment_course` page.
+
+    For a simple flow, when the user clicks "Tôi đã thanh toán" we mark
+    all cart items as paid (status='completed') and grant access by
+    creating Payment records. In production you should verify the
+    payment via gateway API/webhook and only mark as completed after
+    successful verification.
+    """
+    if request.method != 'POST':
+        return redirect('payment_course')
+
+    payment_method = request.POST.get('payment_method') or 'unknown'
+
+    cart_items = Cart.objects.filter(user=request.user)
+    if not cart_items.exists():
+        messages.warning(request, 'Giỏ hàng của bạn đang trống!')
+        return redirect('course_list')
+
+    # Instead of immediately marking payments as completed, send an
+    # activation email with a signed token. The user must click the link
+    # in their email to actually activate and create the Payment records.
+    data = {
+        'user': request.user.pk,
+        'courses': list(cart_items.values_list('course_id', flat=True)),
+        'payment_method': payment_method,
+    }
+
+    token = dumps(data, salt='payment-activation')
+    activation_url = request.build_absolute_uri(reverse('activate_payment', args=[token]))
+
+    subject = 'Xác nhận thanh toán - Học Lập Trình'
+    message = (
+        f'Chúng tôi đã nhận yêu cầu xác nhận thanh toán của bạn.\n'
+        f'Vui lòng bấm vào đường dẫn bên dưới để kích hoạt khóa học:\n\n{activation_url}\n\n'
+        'Nếu bạn không thực hiện yêu cầu này, hãy bỏ qua email này.'
+    )
+
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [request.user.email])
+
+    messages.success(request, 'Chúng tôi đã gửi email xác nhận. Vui lòng kiểm tra hộp thư để kích hoạt khóa học.')
+    return redirect('payment_course')
+
+
+def activate_payment(request, token):
+    try:
+        data = loads(token, salt='payment-activation', max_age=60 * 60 * 24)  # 24 hours
+    except SignatureExpired:
+        messages.error(request, 'Liên kết kích hoạt đã hết hạn. Vui lòng thử lại.')
+        return redirect('checkout')
+    except BadSignature:
+        messages.error(request, 'Liên kết kích hoạt không hợp lệ.')
+        return redirect('checkout')
+
+    user_pk = data.get('user')
+    course_ids = data.get('courses', [])
+    payment_method = data.get('payment_method', 'unknown')
+
+    try:
+        target_user = User.objects.get(pk=user_pk)
+    except User.DoesNotExist:
+        messages.error(request, 'Người dùng không tồn tại.')
+        return redirect('checkout')
+
+    # Create Payment records (avoid duplicates)
+    from datetime import date as _date
+    from .models import LearningPath, WeeklySchedule, DailyTask, Lesson, LearningPathEnrollment
+
+    for cid in course_ids:
+        try:
+            course = Course.objects.get(pk=cid)
+        except Course.DoesNotExist:
+            continue
+
+        payment, created = Payment.objects.get_or_create(
+            user=target_user,
+            course=course,
+            defaults={
+                'amount': course.price,
+                'payment_method': payment_method,
+                'status': 'completed'
+            }
+        )
+
+        # Ensure a LearningPath exists for the course
+        lp, lp_created = LearningPath.objects.get_or_create(
+            course=course,
+            defaults={
+                'total_weeks': 4,
+                'hours_per_week': 5,
+                'difficulty': 'beginner'
+            }
+        )
+
+        # If there are no weekly schedules, try to generate them from Lesson entries
+        if not WeeklySchedule.objects.filter(learning_path=lp).exists():
+            lessons = Lesson.objects.filter(course=course).order_by('order')
+            total_weeks = lp.total_weeks or 4
+
+            # Create weekly containers
+            weekly_objs = []
+            for w in range(1, total_weeks + 1):
+                ws = WeeklySchedule.objects.create(
+                    learning_path=lp,
+                    week_number=w,
+                    title=f'Tuần {w}',
+                    objectives=f'Nội dung tuần {w}',
+                    total_hours=lp.hours_per_week or 5
+                )
+                weekly_objs.append(ws)
+
+            # Distribute lessons across weeks roughly evenly
+            if lessons.exists():
+                n = lessons.count()
+                per_week = max(1, n // total_weeks)
+                extra = n % total_weeks
+                it = iter(lessons)
+                for i, ws in enumerate(weekly_objs, start=1):
+                    count_this_week = per_week + (1 if i <= extra else 0)
+                    for dnum in range(1, count_this_week + 1):
+                        try:
+                            lesson = next(it)
+                        except StopIteration:
+                            break
+                        DailyTask.objects.create(
+                            weekly_schedule=ws,
+                            day_number=dnum,
+                            title=lesson.title,
+                            description=f'Bài học: {lesson.title}',
+                            duration_minutes=60,
+                            resources=lesson.video_url or ''
+                        )
+            else:
+                # No lessons: create a placeholder task per week
+                for ws in weekly_objs:
+                    DailyTask.objects.create(
+                        weekly_schedule=ws,
+                        day_number=1,
+                        title=f'Bài học tuần {ws.week_number}',
+                        description='Nội dung học tập và video hướng dẫn',
+                        duration_minutes=60,
+                        resources=''
+                    )
+
+        # Create or update enrollment for the user
+        enrollment, created_en = LearningPathEnrollment.objects.get_or_create(
+            user=target_user,
+            learning_path=lp,
+            defaults={
+                'assigned_by': None,
+                'start_date': _date.today(),
+                'status': 'active'
+            }
+        )
+        if not created_en:
+            # If enrollment exists but inactive, activate and set start_date if missing
+            if enrollment.status != 'active':
+                enrollment.status = 'active'
+            if not enrollment.start_date:
+                enrollment.start_date = _date.today()
+            enrollment.save()
+
+    # Remove related cart items for that user
+    Cart.objects.filter(user=target_user, course__id__in=course_ids).delete()
+
+    messages.success(request, 'Thanh toán đã được xác nhận và khóa học đã được kích hoạt. Lộ trình học đã sẵn sàng.')
+    return redirect('my_courses')
 
 
 @login_required
@@ -529,6 +730,10 @@ def user_dashboard(request):
         'total_reviews': Review.objects.filter(user=request.user).count(),
     }
     
+    # Lấy enrollments (lộ trình được gán)
+    from .models import LearningPathEnrollment
+    enrollments = LearningPathEnrollment.objects.filter(user=request.user).select_related('learning_path__course', 'assigned_by')
+
     return render(request, 'courses/user_dashboard.html', {
         'purchased_courses': purchased_courses,
         'cart_courses': cart_courses,
@@ -536,6 +741,7 @@ def user_dashboard(request):
         'user_posts': user_posts,
         'user_reviews': user_reviews,
         'user_stats': user_stats,
+        'enrollments': enrollments,
     })
 
 
@@ -552,6 +758,49 @@ def my_courses(request):
 
 from django.contrib.auth import logout
 from django.shortcuts import redirect
+
+@login_required
+def my_schedule(request, enrollment_id):
+    from .models import LearningPathEnrollment, WeeklySchedule, DailyTask
+    from datetime import timedelta
+    enrollment = get_object_or_404(LearningPathEnrollment, id=enrollment_id)
+
+    # chỉ owner hoặc staff được xem
+    if enrollment.user != request.user and not request.user.is_staff:
+        return HttpResponseForbidden('Không có quyền truy cập')
+
+    lp = enrollment.learning_path
+
+    # Lấy ngày bắt đầu — nếu không có, dùng ngày hôm nay
+    start = enrollment.start_date
+    if not start:
+        from datetime import date
+        start = date.today()
+
+    # Xây dựng map ngày -> list of tasks
+    schedule_map = {}
+    for week in WeeklySchedule.objects.filter(learning_path=lp).prefetch_related('days'):
+        for day in week.days.all():
+            # tính ngày: start + (week_number-1)*7 + (day_number-1)
+            day_offset = (week.week_number - 1) * 7 + (day.day_number - 1)
+            event_date = start + timedelta(days=day_offset)
+            key = event_date.isoformat()
+            if key not in schedule_map:
+                schedule_map[key] = []
+            schedule_map[key].append({
+                'week_number': week.week_number,
+                'day_number': day.day_number,
+                'title': day.title,
+                'description': day.description,
+            })
+
+    # Sort keys
+    ordered = dict(sorted(schedule_map.items()))
+
+    return render(request, 'courses/schedule.html', {
+        'enrollment': enrollment,
+        'schedule': ordered,
+    })
 
 # Đăng xuất người dùng
 def custom_logout(request):
@@ -579,6 +828,14 @@ def course_detail(request, course_id):
             course=course, 
             status='completed'
         ).exists()
+        # Nếu admin đã gán learning path cho user, cũng coi là có quyền truy cập
+        if not user_has_purchased:
+            from .models import LearningPathEnrollment
+            user_has_purchased = LearningPathEnrollment.objects.filter(
+                user=request.user,
+                learning_path__course=course,
+                status='active'
+            ).exists()
     
     # Kiểm tra user đã review chưa
     user_review = None
@@ -1002,6 +1259,10 @@ def learning_path(request, course_id):
         user=request.user, 
         course=course, 
         status='completed'
+    ).exists() or LearningPathEnrollment.objects.filter(
+        user=request.user,
+        learning_path__course=course,
+        status='active'
     ).exists()
     
     if not has_access:
@@ -1028,14 +1289,55 @@ def learning_path(request, course_id):
     ).count()
     
     progress = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-    
+
+    # Tính tuần hiện tại dựa trên ngày bắt đầu nếu user có enrollment,
+    # nếu user mua khóa học thì cho full access (current_week = total_weeks)
+    from datetime import date
+    current_week = 1
+    enrollment = None
+    if request.user.is_authenticated:
+        # check enrollment start_date
+        try:
+            enrollment = LearningPathEnrollment.objects.filter(
+                user=request.user,
+                learning_path=learning_path,
+                status='active'
+            ).order_by('-created_at').first()
+        except Exception:
+            enrollment = None
+
+        has_payment = Payment.objects.filter(user=request.user, course=course, status='completed').exists()
+        if has_payment:
+            current_week = learning_path.total_weeks
+            # If user has paid but admin hasn't created an enrollment, create one now
+            if not enrollment:
+                try:
+                    from datetime import date as _date
+                    enrollment = LearningPathEnrollment.objects.create(
+                        user=request.user,
+                        learning_path=learning_path,
+                        assigned_by=None,
+                        start_date=_date.today(),
+                        status='active'
+                    )
+                except Exception:
+                    enrollment = None
+        elif enrollment and enrollment.start_date:
+            days = (date.today() - enrollment.start_date).days
+            week = days // 7 + 1
+            current_week = max(1, min(learning_path.total_weeks, week))
+        else:
+            current_week = 1
+
     return render(request, 'courses/learning_path.html', {
         'course': course,
         'learning_path': learning_path,
         'weekly_schedules': weekly_schedules,
         'progress': progress,
         'total_tasks': total_tasks,
-        'completed_tasks': completed_tasks
+        'completed_tasks': completed_tasks,
+        'current_week': current_week,
+        'enrollment': enrollment,
     })
 
 @login_required
@@ -1059,4 +1361,50 @@ def toggle_task_completion(request, task_id):
         'success': True, 
         'is_completed': task.is_completed,
         'task_id': task.id
+    })
+
+
+from django.contrib.admin.views.decorators import staff_member_required
+
+@staff_member_required
+def admin_learning_path_assign(request):
+    from django.contrib.auth.models import User
+    enrollments = LearningPathEnrollment.objects.select_related('user', 'learning_path', 'assigned_by').all()
+    users = User.objects.filter(is_active=True).order_by('username')
+    learning_paths = LearningPath.objects.select_related('course').all()
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        lp_id = request.POST.get('learning_path_id')
+        start_date = request.POST.get('start_date') or None
+        end_date = request.POST.get('end_date') or None
+
+        try:
+            user = User.objects.get(id=user_id)
+            lp = LearningPath.objects.get(id=lp_id)
+        except Exception:
+            messages.error(request, 'Dữ liệu không hợp lệ.')
+            return redirect('admin_learning_path_assign')
+
+        enrollment, created = LearningPathEnrollment.objects.get_or_create(
+            user=user,
+            learning_path=lp,
+            defaults={
+                'assigned_by': request.user,
+                'start_date': start_date,
+                'end_date': end_date,
+            }
+        )
+
+        if not created:
+            messages.info(request, 'Học viên đã được gán lộ trình này.')
+        else:
+            messages.success(request, 'Đã gán lộ trình cho học viên.')
+
+        return redirect('admin_learning_path_assign')
+
+    return render(request, 'courses/admin_learning_path_assign.html', {
+        'enrollments': enrollments,
+        'users': users,
+        'learning_paths': learning_paths,
     })
