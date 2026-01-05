@@ -4,6 +4,8 @@ from django.contrib.auth import views as auth_views
 from django.views.generic import RedirectView
 
 urlpatterns = [
+    # Legacy static path used in some templates/bookmarks — redirect to current list
+    path('courses/course_list.html/', RedirectView.as_view(url='/', permanent=True)),
     path('', views.home, name='course_list'),
     path('course/<int:course_id>/', views.course_detail, name='course_detail'),
     path('add-to-cart/<int:course_id>/', views.add_to_cart, name='add_to_cart'),
